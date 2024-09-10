@@ -19,28 +19,31 @@ internal static class ConstructorParameterTestGeneratorModelProvider
 		{
 			EquatableList<ConstructorModel> constructors = new();
 			foreach (var ctor in testClass.InstanceConstructors)
-			{
-				EquatableList<ParameterModel> parameters = new();
-
-				foreach (var parameter in ctor.Parameters)
-				{
-					if (!parameter.Type.IsReferenceType) // only constructors with ALL-Reference types are supported
-					{
-						parameters.Clear();
-						break;
-					}
-
-					parameters.Add(new ParameterModel(parameter.Name, parameter.Type.ToDisplayString()));
-				}
-
-				if (parameters.Count > 0)
-					constructors.Add(new ConstructorModel(parameters));
-			}
+				ResolveConstructors(constructors, ctor);
 
 			if (constructors.Count > 0)
 				classes.Add(new ClassModel(testClass.Name, testClass.ContainingNamespace.ToDisplayString(), constructors));
 		}
 
 		return new ConstructorParameterTestGeneratorModel(name, namespaceName, baseType, classes);
+	}
+
+	private static void ResolveConstructors(EquatableList<ConstructorModel> constructors, IMethodSymbol ctor)
+	{
+		EquatableList<ParameterModel> parameters = new();
+
+		foreach (var parameter in ctor.Parameters)
+		{
+			if (!parameter.Type.IsReferenceType) // only constructors with ALL-Reference types are supported
+			{
+				parameters.Clear();
+				break;
+			}
+
+			parameters.Add(new ParameterModel(parameter.Name, parameter.Type.ToDisplayString()));
+		}
+
+		if (parameters.Count > 0)
+			constructors.Add(new ConstructorModel(parameters));
 	}
 }
