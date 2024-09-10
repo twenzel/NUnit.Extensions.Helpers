@@ -104,7 +104,14 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 
 		stringBuilder.AppendLine("}");
 
-		context.AddSource($"{testToGenerate.ClassName}_CtorParamTests{GENERATED_FILE_SUFFIX}", SourceText.From(stringBuilder.ToString(), Encoding.UTF8));
+		string fileName;
+
+		if (!string.IsNullOrEmpty(testToGenerate.BaseType))
+			fileName = $"{testToGenerate.BaseType}.{testToGenerate.ClassName}";
+		else
+			fileName = $"{testToGenerate.NameSpace}.{testToGenerate.ClassName}";
+
+		context.AddSource($"{fileName}_CPT{GENERATED_FILE_SUFFIX}", SourceText.From(stringBuilder.ToString(), Encoding.UTF8));
 
 	}
 
