@@ -11,8 +11,6 @@
 		<Authors>Toni Wenzel</Authors>
 		<Copyright>Toni Wenzel</Copyright>
 		<PackageProjectUrl>https://github.com/twenzel/NUnit.Extensions.Helpers</PackageProjectUrl>
-		<PackageIcon>icon.png</PackageIcon>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
 
 		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 		<AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
