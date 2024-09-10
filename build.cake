@@ -123,29 +123,29 @@ Task("Test")
 	DotNetTest(solutionFile.FullPath, settings);
  });
 
-//  Task("SonarBegin")
-// 	.WithCriteria(!isLocalBuild)
-// 	.Does(() => {
-// 		SonarBegin(new SonarBeginSettings {
-// 			Key = sonarProjectKey,
-// 			Url = sonarUrl,
-// 			Organization = sonarOrganization,
-// 			Token = sonarLogin,
-// 			UseCoreClr = true,
-// 			VsTestReportsPath = testResultsPath.ToString(),
-// 			OpenCoverReportsPath = codeCoverageResultFilePath.ToString(),
-// 			ArgumentCustomization = args => args.Append("/d:sonar.scanner.skipJreProvisioning=true")
-//             .Append("/d:sonar.scanner.scanAll=false") // disable Multi-Language analysis
-// 		});
-// 	});
+ Task("SonarBegin")
+	.WithCriteria(!isLocalBuild)
+	.Does(() => {
+		SonarBegin(new SonarBeginSettings {
+			Key = sonarProjectKey,
+			Url = sonarUrl,
+			Organization = sonarOrganization,
+			Token = sonarLogin,
+			UseCoreClr = true,
+			VsTestReportsPath = testResultsPath.ToString(),
+			OpenCoverReportsPath = codeCoverageResultFilePath.ToString(),
+			ArgumentCustomization = args => args.Append("/d:sonar.scanner.skipJreProvisioning=true")
+            .Append("/d:sonar.scanner.scanAll=false") // disable Multi-Language analysis
+		});
+	});
 
-// Task("SonarEnd")
-// 	.WithCriteria(!isLocalBuild)
-// 	.Does(() => {
-// 		SonarEnd(new SonarEndSettings {
-// 			Token = sonarLogin
-// 		});
-// 	});
+Task("SonarEnd")
+	.WithCriteria(!isLocalBuild)
+	.Does(() => {
+		SonarEnd(new SonarEndSettings {
+			Token = sonarLogin
+		});
+	});
 
  Task("Publish")	
 	.WithCriteria(isReleaseCreation)
@@ -176,9 +176,9 @@ Task("Test")
 // Common Targets
 //////////////////////////////////////////////////////////////////////
 Task("Default")
-	//.IsDependentOn("SonarBegin")
+	.IsDependentOn("SonarBegin")
 	.IsDependentOn("Test")
-	//.IsDependentOn("SonarEnd")
+	.IsDependentOn("SonarEnd")
 	.IsDependentOn("Publish");
 
 //////////////////////////////////////////////////////////////////////
