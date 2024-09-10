@@ -45,7 +45,7 @@ jobs:
             8.0.x
 
       - name: Run Cake script
-        uses: cake-build/cake-action@v1
+        uses: cake-build/cake-action@v2
         with:
           target: Default
           cake-version: tool-manifest
