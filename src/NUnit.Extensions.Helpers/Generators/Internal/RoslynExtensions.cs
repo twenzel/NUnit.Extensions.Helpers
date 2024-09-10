@@ -4,7 +4,7 @@ namespace NUnit.Extensions.Helpers.Generators.Internal;
 
 internal static class RoslynExtensions
 {
-	public static bool TryGetValue<T>(this INamedTypeSymbol symbol, string attributeName, string name, out T value)
+	public static bool TryGetValue<T>(this INamedTypeSymbol symbol, string attributeName, string name, out T? value)
 	{
 		value = default;
 		var attributes = symbol.GetAttributes().Where(a => a.AttributeClass?.Name == attributeName);
@@ -16,7 +16,7 @@ internal static class RoslynExtensions
 		return false;
 	}
 
-	public static bool TryGetValue<T>(this AttributeData? attributeData, string name, out T value)
+	public static bool TryGetValue<T>(this AttributeData? attributeData, string name, out T? value)
 	{
 		value = default;
 		if (attributeData == null)
@@ -33,7 +33,7 @@ internal static class RoslynExtensions
 			if (string.Compare(names[i], name, true) != 0)
 				continue;
 
-			value = (T)parameter.Value;
+			value = (T?)parameter.Value;
 			return true;
 		}
 
@@ -42,7 +42,7 @@ internal static class RoslynExtensions
 		if (val.IsNull)
 			return false;
 
-		value = (T)val.Value;
+		value = (T?)val.Value;
 		return true;
 	}
 }

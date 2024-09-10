@@ -44,17 +44,21 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 	{
 		var list = new List<INamedTypeSymbol>();
 
+		if (context.TargetSymbol is not INamedTypeSymbol targetTypeSymbol)
+			return null;
+
 		foreach (var attribute in context.Attributes)
 		{
 			if (attribute.ConstructorArguments.Length == 0)
 				continue;
 
-			list.Add((INamedTypeSymbol)attribute.ConstructorArguments[0].Value);
+			if (attribute.ConstructorArguments[0].Value is INamedTypeSymbol typeSymbol)
+				list.Add(typeSymbol);
 		}
 
 		ct.ThrowIfCancellationRequested();
 
-		return ConstructorParameterTestGeneratorModelProvider.GetDescriptor(context.TargetSymbol as INamedTypeSymbol, list);
+		return ConstructorParameterTestGeneratorModelProvider.GetDescriptor(targetTypeSymbol, list);
 	}
 
 	void Generate(SourceProductionContext spc, ConstructorParameterTestGeneratorModel? testDescriptor)
