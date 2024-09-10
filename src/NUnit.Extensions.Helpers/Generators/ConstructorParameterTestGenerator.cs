@@ -85,7 +85,8 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 		stringBuilder.AppendLine("using System;");
 		stringBuilder.AppendLine("using FluentAssertions;");
 		stringBuilder.AppendLine("using Moq;");
-		stringBuilder.AppendLine($"\r\nnamespace {testToGenerate.NameSpace};");
+		stringBuilder.AppendLine();
+		stringBuilder.AppendLine($"namespace {testToGenerate.NameSpace};");
 		stringBuilder.Append($"partial class {testToGenerate.ClassName}");
 
 		if (!string.IsNullOrEmpty(testToGenerate.BaseType))
