@@ -20,7 +20,7 @@ internal static class TestHelpers
 		   MetadataReference.CreateFromFile(netCoreReferencePath + "System.Private.CoreLib.dll"),
 		   MetadataReference.CreateFromFile(netCoreReferencePath + "System.Runtime.dll"),
 	   ],
-	   new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+	   new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, usings: ["NUnit.Framework"]));
 	}
 
 	public static GeneratorRunResult GenerateAndValidateCSharpOutput<TGenerator>(Compilation inputCompilation, int expectedSourcesCount, bool assertCaching = false) where TGenerator : ICustomGenerator, IIncrementalGenerator, new()

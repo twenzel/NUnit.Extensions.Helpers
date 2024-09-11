@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using NUnit.Extensions.Helpers.Generators.Internal;
@@ -58,7 +59,17 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 
 		ct.ThrowIfCancellationRequested();
 
-		return ConstructorParameterTestGeneratorModelProvider.GetDescriptor(targetTypeSymbol, list);
+		var hasNunitGlobalImport = DetermineNUnitGlobalImport(context.SemanticModel.Compilation);
+
+		return ConstructorParameterTestGeneratorModelProvider.GetDescriptor(targetTypeSymbol, list, hasNunitGlobalImport);
+	}
+
+	private static bool DetermineNUnitGlobalImport(Compilation compilation)
+	{
+		if (compilation is CSharpCompilation sharpCompilation && sharpCompilation.Options.Usings.Contains("NUnit.Framework"))
+			return true;
+
+		return false;
 	}
 
 	void Generate(SourceProductionContext spc, ConstructorParameterTestGeneratorModel? testDescriptor)
@@ -89,6 +100,10 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 		stringBuilder.AppendLine("using System;");
 		stringBuilder.AppendLine("using FluentAssertions;");
 		stringBuilder.AppendLine("using Moq;");
+
+		if (!testToGenerate.HasNunitGlobalImport)
+			stringBuilder.AppendLine("using NUnit.Framework;");
+
 		stringBuilder.AppendLine();
 		stringBuilder.AppendLine($"namespace {testToGenerate.NameSpace};");
 		stringBuilder.Append($"partial class {testToGenerate.ClassName}");

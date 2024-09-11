@@ -4,7 +4,7 @@ namespace NUnit.Extensions.Helpers.Generators.Models;
 
 internal static class ConstructorParameterTestGeneratorModelProvider
 {
-	public static ConstructorParameterTestGeneratorModel GetDescriptor(INamedTypeSymbol typeSymbol, List<INamedTypeSymbol> testClasses)
+	public static ConstructorParameterTestGeneratorModel GetDescriptor(INamedTypeSymbol typeSymbol, List<INamedTypeSymbol> testClasses, bool hasNunitGlobalImport)
 	{
 		var name = typeSymbol.Name;
 		var namespaceName = typeSymbol.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
@@ -25,7 +25,7 @@ internal static class ConstructorParameterTestGeneratorModelProvider
 				classes.Add(new ClassModel(testClass.Name, testClass.ContainingNamespace.ToDisplayString(), constructors));
 		}
 
-		return new ConstructorParameterTestGeneratorModel(name, namespaceName, baseType, classes);
+		return new ConstructorParameterTestGeneratorModel(name, namespaceName, baseType, classes, hasNunitGlobalImport);
 	}
 
 	private static void ResolveConstructors(EquatableList<ConstructorModel> constructors, IMethodSymbol ctor)
