@@ -15,3 +15,87 @@
 Helpers to generate NUnit tests
 
 > This is not an official [NUnit](https://github.com/nunit/nunit) package.
+
+## Install
+
+Add the NuGet package [NUnit.Extensions.Helpers](https://nuget.org/packages/NUnit.Extensions.Helpers/) to any project supporting .NET Standard 2.0 or higher.
+
+> &gt; dotnet add package NUnit.Extensions.Helpers
+
+### Information
+
+> Currently the generated source requires [Moq](https://nuget.org/packages/Moq) and [FluentAssertions](https://nuget.org/packages/FluentAssertions).
+
+## Usage
+
+Use the `GenerateConstructorParameterNullTests` attribute to define the SUT (class which should be tested) to generate constructor parameter tests for.
+
+```csharp
+[GenerateConstructorParameterNullTests(typeof(Document))]
+internal partial class DocumentTests
+{
+    [Test]
+    public void Test1()
+    {
+        Assert.Pass();
+    }
+}
+```
+
+If the SUT looks like
+
+```csharp
+public class Document
+{
+    private Stream _stream;
+    private IFileTester _fileTester;
+    private IOtherFilter _filter;
+
+    public Document(Stream myStream, IFileTester fileTester, IOtherFilter filter)
+    {
+        _stream = myStream ?? throw new ArgumentNullException(nameof(myStream));
+        _fileTester = fileTester ?? throw new ArgumentNullException(nameof(fileTester));
+        _filter = filter ?? throw new ArgumentNullException(nameof(filter));
+    }
+}
+```
+
+following code will be generated:
+
+```csharp
+partial class DocumentTests
+{
+    [Test]
+    public void Throws_Exception_When_MyStream_Is_Null()
+    {
+        Action action = () => new Document(null, null, null);
+        action.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("myStream");
+    }
+
+    [Test]
+    public void Throws_Exception_When_FileTester_Is_Null()
+    {
+        Action action = () => new Document(Mock.Of<System.IO.Stream>(), null, null);
+        action.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("fileTester");
+    }
+
+    [Test]
+    public void Throws_Exception_When_Filter_Is_Null()
+    {
+        Action action = () => new Document(Mock.Of<System.IO.Stream>(), Mock.Of<Sample.IFileTester>(), null);
+        action.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("filter");
+    }
+}
+
+```
+
+### Options
+
+It's possible to generate a nested class with the `AsNestedClass` argument.
+
+```csharp
+[GenerateConstructorParameterNullTests(typeof(Document), AsNestedClass = true)]
+internal partial class TestWithNested
+{
+}
+```
