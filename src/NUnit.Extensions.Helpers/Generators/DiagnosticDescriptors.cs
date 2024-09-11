@@ -14,4 +14,13 @@ internal static class DiagnosticDescriptors
 	   DiagnosticSeverity.Error,
 	   true
    );
+
+	public static readonly DiagnosticDescriptor NoPartialClass = new(
+	   "NEG101",
+	   "No partial class",
+	   "The class {0} should be partial",
+	   CATEGORY,
+	   DiagnosticSeverity.Error,
+	   true
+   );
 }

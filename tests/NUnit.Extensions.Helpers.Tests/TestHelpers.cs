@@ -33,6 +33,18 @@ internal static class TestHelpers
 
 		return GenerateAndValidateOutput<TGenerator>(inputCompilation, (g) => CSharpGeneratorDriver.Create([g.AsSourceGenerator()], driverOptions: opts), expectedSourcesCount, assertCaching);
 	}
+
+	public static GeneratorRunResult GenerateCSharpOutput<TGenerator>(Compilation inputCompilation) where TGenerator : ICustomGenerator, IIncrementalGenerator, new()
+	{
+		// ⚠ Tell the driver to track all the incremental generator outputs
+		// without this, you'll have no tracked outputs!
+		var opts = new GeneratorDriverOptions(
+			disabledOutputs: IncrementalGeneratorOutputKind.None,
+			trackIncrementalGeneratorSteps: false);
+
+		return GenerateCSharpOutput<TGenerator>(inputCompilation, (g) => CSharpGeneratorDriver.Create([g.AsSourceGenerator()], driverOptions: opts));
+	}
+
 	private static GeneratorRunResult GenerateAndValidateOutput<TGenerator>(Compilation inputCompilation, Func<IIncrementalGenerator, GeneratorDriver> generateDriver, int expectedSourcesCount, bool assertCaching) where TGenerator : ICustomGenerator, IIncrementalGenerator, new()
 	{
 		// get all the const string fields on the TrackingName type
@@ -98,6 +110,30 @@ internal static class TestHelpers
 		}
 
 		return generatorResult;
+	}
+
+	private static GeneratorRunResult GenerateCSharpOutput<TGenerator>(Compilation inputCompilation, Func<IIncrementalGenerator, GeneratorDriver> generateDriver) where TGenerator : ICustomGenerator, IIncrementalGenerator, new()
+	{
+		// Ensure compilation has no errors
+		var compilationDiagnostics = inputCompilation.GetDiagnostics(CancellationToken.None).Where(d => d.Severity == DiagnosticSeverity.Error);
+		compilationDiagnostics.Should().HaveCount(0, string.Join(Environment.NewLine, compilationDiagnostics.Select(d => d.GetMessage())));
+
+		// directly create an instance of the generator
+		// (Note: in the compiler this is loaded from an assembly, and created via reflection at runtime)
+		var generator = new TGenerator();
+		generator.AddGenerationInfoHeader = false;
+		generator.AddMarkerAttributes = false;
+
+		// Create the driver that will control the generation, passing in our generator
+		var driver = generateDriver(generator);
+
+		// Run the generation pass
+		// (Note: the generator driver itself is immutable, and all calls return an updated version of the driver that you should use for subsequent calls)
+		driver = driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out var outputCompilation, out var diagnostics, CancellationToken.None);
+
+		var runResult = driver.GetRunResult();
+
+		return runResult.Results[0];
 	}
 
 	/// <summary>

@@ -1,4 +1,7 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using NUnit.Extensions.Helpers.Generators.Models;
 
 namespace NUnit.Extensions.Helpers.Generators.Internal;
 
@@ -45,4 +48,43 @@ internal static class RoslynExtensions
 		value = (T?)val.Value;
 		return true;
 	}
+
+	public static bool IsPartialClass(this SyntaxNode node)
+	{
+		if (node is ClassDeclarationSyntax classDeclaration)
+			return classDeclaration.Modifiers.IndexOf(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword) > -1;
+
+		return false;
+	}
+
+	public static ParentClass? GetParentClasses(this BaseTypeDeclarationSyntax typeSyntax)
+	{
+		// Try and get the parent syntax. If it isn't a type like class/struct, this will be null
+		var parentSyntax = typeSyntax.Parent as TypeDeclarationSyntax;
+		ParentClass? parentClassInfo = null;
+
+		// Keep looping while we're in a supported nested type
+		while (parentSyntax != null && IsAllowedKind(parentSyntax.Kind()))
+		{
+			// Record the parent type keyword (class/struct etc), name, and constraints
+			parentClassInfo = new ParentClass(
+				Keyword: parentSyntax.Keyword.ValueText,
+				Name: parentSyntax.Identifier.ToString() + parentSyntax.TypeParameterList,
+				Constraints: parentSyntax.ConstraintClauses.ToString(),
+				Child: parentClassInfo); // set the child link (null initially)
+
+			// Move to the next outer type
+			parentSyntax = (parentSyntax.Parent as TypeDeclarationSyntax);
+		}
+
+		// return a link to the outermost parent type
+		return parentClassInfo;
+
+	}
+
+	// We can only be nested in class/struct/record
+	static bool IsAllowedKind(SyntaxKind kind) =>
+		kind == SyntaxKind.ClassDeclaration ||
+		kind == SyntaxKind.StructDeclaration ||
+		kind == SyntaxKind.RecordDeclaration;
 }

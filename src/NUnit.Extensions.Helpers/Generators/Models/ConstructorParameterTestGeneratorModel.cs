@@ -1,3 +1,3 @@
 namespace NUnit.Extensions.Helpers.Generators.Models;
 
-internal record ConstructorParameterTestGeneratorModel(string ClassName, string NameSpace, string BaseType, EquatableList<ClassModel> TestClasses, bool HasNunitGlobalImport);
+internal record ConstructorParameterTestGeneratorModel(string ClassName, string NameSpace, string BaseType, EquatableList<ClassModel> TestClasses, bool HasNunitGlobalImport, bool IsPartialClass, ParentClass? ParentClass);

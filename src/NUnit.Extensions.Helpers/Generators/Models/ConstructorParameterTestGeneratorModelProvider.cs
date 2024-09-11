@@ -1,10 +1,12 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using NUnit.Extensions.Helpers.Generators.Internal;
 
 namespace NUnit.Extensions.Helpers.Generators.Models;
 
 internal static class ConstructorParameterTestGeneratorModelProvider
 {
-	public static ConstructorParameterTestGeneratorModel GetDescriptor(INamedTypeSymbol typeSymbol, List<INamedTypeSymbol> testClasses, bool hasNunitGlobalImport)
+	public static ConstructorParameterTestGeneratorModel GetDescriptor(INamedTypeSymbol typeSymbol, List<INamedTypeSymbol> testClasses, bool hasNunitGlobalImport, ClassDeclarationSyntax targetNode)
 	{
 		var name = typeSymbol.Name;
 		var namespaceName = typeSymbol.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
@@ -25,7 +27,10 @@ internal static class ConstructorParameterTestGeneratorModelProvider
 				classes.Add(new ClassModel(testClass.Name, testClass.ContainingNamespace.ToDisplayString(), constructors));
 		}
 
-		return new ConstructorParameterTestGeneratorModel(name, namespaceName, baseType, classes, hasNunitGlobalImport);
+		var isPartialClass = targetNode.IsPartialClass();
+		var parentClass = targetNode.GetParentClasses();
+
+		return new ConstructorParameterTestGeneratorModel(name, namespaceName, baseType, classes, hasNunitGlobalImport, isPartialClass, parentClass);
 	}
 
 	private static void ResolveConstructors(EquatableList<ConstructorModel> constructors, IMethodSymbol ctor)

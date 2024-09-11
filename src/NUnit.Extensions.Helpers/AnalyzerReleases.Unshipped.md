@@ -6,3 +6,4 @@
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 NEG100 | NUnit.Extensions.CodeGenerators | Error | DiagnosticDescriptors
+NEG101 | NUnit.Extensions.CodeGenerators | Error | DiagnosticDescriptors
