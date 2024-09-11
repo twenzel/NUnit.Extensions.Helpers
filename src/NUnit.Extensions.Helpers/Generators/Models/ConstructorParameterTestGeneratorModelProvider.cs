@@ -6,7 +6,7 @@ namespace NUnit.Extensions.Helpers.Generators.Models;
 
 internal static class ConstructorParameterTestGeneratorModelProvider
 {
-	public static ConstructorParameterTestGeneratorModel GetDescriptor(INamedTypeSymbol typeSymbol, List<INamedTypeSymbol> testClasses, bool hasNunitGlobalImport, ClassDeclarationSyntax targetNode)
+	public static ConstructorParameterTestGeneratorModel GetDescriptor(INamedTypeSymbol typeSymbol, List<INamedTypeSymbol> testClasses, bool hasNunitGlobalImport, ClassDeclarationSyntax? targetNode)
 	{
 		var name = typeSymbol.Name;
 		var namespaceName = typeSymbol.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));

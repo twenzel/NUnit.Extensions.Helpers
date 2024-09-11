@@ -1,6 +1,6 @@
 namespace Sample;
 
-public class DocumentTests
+public partial class DocumentTests
 {
 	/// <summary>
 	/// lala

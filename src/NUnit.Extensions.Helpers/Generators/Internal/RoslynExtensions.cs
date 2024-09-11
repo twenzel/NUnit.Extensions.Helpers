@@ -49,7 +49,7 @@ internal static class RoslynExtensions
 		return true;
 	}
 
-	public static bool IsPartialClass(this SyntaxNode node)
+	public static bool IsPartialClass(this SyntaxNode? node)
 	{
 		if (node is ClassDeclarationSyntax classDeclaration)
 			return classDeclaration.Modifiers.IndexOf(Microsoft.CodeAnalysis.CSharp.SyntaxKind.PartialKeyword) > -1;
@@ -57,8 +57,11 @@ internal static class RoslynExtensions
 		return false;
 	}
 
-	public static ParentClass? GetParentClasses(this BaseTypeDeclarationSyntax typeSyntax)
+	public static ParentClass? GetParentClasses(this BaseTypeDeclarationSyntax? typeSyntax)
 	{
+		if (typeSyntax == null)
+			return null;
+
 		// Try and get the parent syntax. If it isn't a type like class/struct, this will be null
 		var parentSyntax = typeSyntax.Parent as TypeDeclarationSyntax;
 		ParentClass? parentClassInfo = null;
