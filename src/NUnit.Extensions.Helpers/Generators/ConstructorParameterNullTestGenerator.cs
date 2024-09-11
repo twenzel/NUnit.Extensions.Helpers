@@ -9,7 +9,7 @@ using NUnit.Extensions.Helpers.Generators.Models;
 namespace NUnit.Extensions.Helpers.Generators;
 
 [Generator]
-public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncrementalGenerator
+public partial class ConstructorParameterNullTestGenerator : BaseGenerator, IIncrementalGenerator
 {
 	/// <summary>
 	/// Called to initialize the generator and register generation steps via callbacks
@@ -22,7 +22,7 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 
 		var classesToGenerate =
 				context.SyntaxProvider
-					.ForAttributeWithMetadataName<ConstructorParameterTestGeneratorModel?>($"{Sources.NAMESPACE}.{Sources.GENERATE_CONSTRUCTOR_PARAMETER_TESTS_ATTRIBUTE}",
+					.ForAttributeWithMetadataName<ConstructorParameterTestGeneratorModel?>($"{Sources.NAMESPACE}.{Sources.GENERATE_CONSTRUCTOR_PARAMETER_NULL_TESTS_ATTRIBUTE}",
 						predicate: static (node, _) => node is ClassDeclarationSyntax,
 						transform: GetTypeToGenerate)
 					.WithTrackingName(TrackingNames.InitialExtraction);
@@ -36,7 +36,7 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 		{
 			context.RegisterPostInitializationOutput(context =>
 			{
-				context.AddSource($"{Sources.GENERATE_CONSTRUCTOR_PARAMETER_TESTS_ATTRIBUTE}{GENERATED_FILE_SUFFIX}", SourceText.From(Sources.GENERATE_CONSTRUCTOR_PARAMETER_TESTS_ATTRIBUTE_SOURCE, Encoding.UTF8));
+				context.AddSource($"{Sources.GENERATE_CONSTRUCTOR_PARAMETER_NULL_TESTS_ATTRIBUTE}{GENERATED_FILE_SUFFIX}", SourceText.From(Sources.GENERATE_CONSTRUCTOR_PARAMETER_NULL_TESTS_ATTRIBUTE_SOURCE, Encoding.UTF8));
 			});
 		}
 	}
@@ -44,6 +44,7 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 	static ConstructorParameterTestGeneratorModel? GetTypeToGenerate(GeneratorAttributeSyntaxContext context, CancellationToken ct)
 	{
 		var list = new List<INamedTypeSymbol>();
+		var asNestedClass = false;
 
 		if (context.TargetSymbol is not INamedTypeSymbol targetTypeSymbol)
 			return null;
@@ -55,13 +56,19 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 
 			if (attribute.ConstructorArguments[0].Value is INamedTypeSymbol typeSymbol)
 				list.Add(typeSymbol);
+
+			foreach (var namedArgument in attribute.NamedArguments)
+			{
+				if (namedArgument.Key == Sources.ARGUMENT_NAME_ASNESTEDCLASS && namedArgument.Value.ToCSharpString() == "true")
+					asNestedClass = true;
+			}
 		}
 
 		ct.ThrowIfCancellationRequested();
 
 		var hasNunitGlobalImport = DetermineNUnitGlobalImport(context.SemanticModel.Compilation);
 
-		return ConstructorParameterTestGeneratorModelProvider.GetDescriptor(targetTypeSymbol, list, hasNunitGlobalImport, context.TargetNode as ClassDeclarationSyntax);
+		return ConstructorParameterTestGeneratorModelProvider.GetDescriptor(targetTypeSymbol, list, hasNunitGlobalImport, context.TargetNode as ClassDeclarationSyntax, asNestedClass);
 	}
 
 	private static bool DetermineNUnitGlobalImport(Compilation compilation)
@@ -120,6 +127,15 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 
 		AddIntent(stringBuilder, parentsCount);
 		stringBuilder.AppendLine("{");
+
+		if (testToGenerate.AsNestedClass)
+		{
+			parentsCount++;
+			AddIntent(stringBuilder, parentsCount);
+			stringBuilder.AppendLine("class ConstructorParameterNullTests");
+			AddIntent(stringBuilder, parentsCount);
+			stringBuilder.AppendLine("{");
+		}
 
 		AddTests(testToGenerate, stringBuilder, parentsCount);
 
@@ -254,9 +270,26 @@ public partial class ConstructorParameterTestGenerator : BaseGenerator, IIncreme
 	{
 		if (!testToGenerate.IsPartialClass)
 		{
-			var diagnostic = Diagnostic.Create(DiagnosticDescriptors.NoPartialClass, null, testToGenerate.ClassName);
+			var diagnostic = Diagnostic.Create(DiagnosticDescriptors.NoPartialClass, null, GetFullQualifiedClassName(testToGenerate));
 
 			context.ReportDiagnostic(diagnostic);
 		}
+	}
+
+	private static string GetFullQualifiedClassName(ConstructorParameterTestGeneratorModel testToGenerate)
+	{
+		var builder = new StringBuilder();
+		builder.Append($"{testToGenerate.NameSpace}.");
+
+		var parentClass = testToGenerate.ParentClass;
+
+		while (parentClass is not null)
+		{
+			builder.Append($"{parentClass.Name}.");
+			parentClass = parentClass.Child;
+		}
+
+		builder.Append(testToGenerate.ClassName);
+		return builder.ToString();
 	}
 }

@@ -11,7 +11,7 @@ public partial class DocumentTests
 		Assert.Pass();
 	}
 
-	[GenerateConstructorParameterTests(typeof(Document))]
+	[GenerateConstructorParameterNullTests(typeof(Document))]
 	public partial class CtorTests : DocumentTests
 	{
 	}
