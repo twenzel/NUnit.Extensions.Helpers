@@ -154,7 +154,7 @@ public partial class ConstructorParameterNullTestGenerator : BaseGenerator, IInc
 
 	}
 
-	private void CloseParentClasses(StringBuilder stringBuilder, int parentsCount)
+	private static void CloseParentClasses(StringBuilder stringBuilder, int parentsCount)
 	{
 		// We need to "close" each of the parent types, so write
 		// the required number of '}'
