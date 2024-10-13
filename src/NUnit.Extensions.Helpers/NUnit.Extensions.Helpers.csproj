@@ -2,38 +2,29 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <EnablePackageValidation>true</EnablePackageValidation>
-    <EnforceExtendedAnalyzerRules>false</EnforceExtendedAnalyzerRules>
-    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <DevelopmentDependency>true</DevelopmentDependency>
-    <IncludeSymbols>False</IncludeSymbols>
-    <IsRoslynComponent>true</IsRoslynComponent>
-    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <IsPackable>true</IsPackable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+  </PropertyGroup>
 
+	<PropertyGroup>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageIcon>icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageDescription>Helpers (Source generators) for NUnit to generate tests more easily.</PackageDescription>
+		<PackageDescription>Helpers for NUnit to generate tests more easily.</PackageDescription>
 		<PackageTags>NUnit Moq Extensions</PackageTags>
-  </PropertyGroup>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.OpenApi.Readers" />
+	</ItemGroup>
 
   <ItemGroup>
-   <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers">
-			<PrivateAssets>all</PrivateAssets>
-			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
-		<PackageReference Include="Microsoft.OpenApi.Readers" />
-		<PackageReference Include="Microsoft.SourceLink.GitHub">
-		  <PrivateAssets>all</PrivateAssets>
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
+    <ProjectReference Include="..\NUnit.Extensions.Helpers.Generators\NUnit.Extensions.Helpers.Generators.csproj" PrivateAssets="none" />
   </ItemGroup>
 
-  <ItemGroup>
+	 <ItemGroup>
     <InternalsVisibleTo Include="NUnit.Extensions.Helpers.Tests" />
   </ItemGroup>
 
@@ -48,10 +39,4 @@
 		<None Include="../../README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
-  <ItemGroup>
-    <!-- Package the generator in the analyzer directory of the nuget package -->
-    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="$(OutputPath)\$(AssemblyName).deps.json" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="$(OutputPath)\$(AssemblyName).pdb" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />		
-  </ItemGroup>
 </Project>

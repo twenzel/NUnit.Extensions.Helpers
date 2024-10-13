@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\NUnit.Extensions.Helpers\NUnit.Extensions.Helpers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="True" />
+    <ProjectReference Include="..\..\src\NUnit.Extensions.Helpers.Generators\NUnit.Extensions.Helpers.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="True" />
   </ItemGroup>
 
   <ItemGroup>
