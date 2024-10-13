@@ -28,6 +28,8 @@ Add the NuGet package [NUnit.Extensions.Helpers](https://nuget.org/packages/NUni
 
 ## Usage
 
+### Constructor parameter null tests
+
 Use the `GenerateConstructorParameterNullTests` attribute to define the SUT (class which should be tested) to generate constructor parameter tests for.
 
 ```csharp
@@ -89,7 +91,7 @@ partial class DocumentTests
 
 ```
 
-### Options
+#### Options
 
 It's possible to generate a nested class with the `AsNestedClass` argument.
 
@@ -97,5 +99,19 @@ It's possible to generate a nested class with the `AsNestedClass` argument.
 [GenerateConstructorParameterNullTests(typeof(Document), AsNestedClass = true)]
 internal partial class TestWithNested
 {
+}
+```
+
+### Web service tests
+
+Use the `WebServiceTester` helper class. This class reads the OpenApi documentation and can execute arbitary tests.
+
+```csharp
+[Test]
+public async Task TestEndpointSecurity()
+{
+    var tester = new WebServiceTester("swagger.json");
+
+    await tester.VerifySecuredEndpointsRequiresAuthentication(httpClient, CancellationToken.None);
 }
 ```
