@@ -2,33 +2,25 @@ using Microsoft.OpenApi.Models;
 
 namespace NUnit.Extensions.Helpers;
 
-public record EndpointParameterInformation
+/// <summary>
+/// Provides information about a parameter (in Uri or body)
+/// </summary>
+public record EndpointParameterInformation : EndpointInformation
 {
 	/// <summary>
-	/// Gets the path of the endpoint
+	/// Gets the schema information
 	/// </summary>
-	public string Path { get; init; } = string.Empty;
+	public OpenApiSchema Schema { get; init; }
 
 	/// <summary>
-	/// Gets the endpoint operation type (POST, GET,...)
+	/// Gets the parameter name
 	/// </summary>
-	public OperationType OperationType { get; }
+	public string ParameterName { get; init; }
 
-	/// <summary>
-	/// Gets the operation information
-	/// </summary>
-	public OpenApiOperation Operation { get; init; }
-
-	/// <summary>
-	/// Gets the parameter information
-	/// </summary>
-	public OpenApiParameter Parameter { get; init; }
-
-	public EndpointParameterInformation(string path, OperationType operationType, OpenApiOperation operation, OpenApiParameter parameter)
+	public EndpointParameterInformation(string path, OperationType operationType, OpenApiOperation operation, OpenApiSchema schema, string name)
+		: base(path, operationType, operation)
 	{
-		Path = path;
-		OperationType = operationType;
-		Operation = operation;
-		Parameter = parameter;
+		Schema = schema;
+		ParameterName = name;
 	}
 }

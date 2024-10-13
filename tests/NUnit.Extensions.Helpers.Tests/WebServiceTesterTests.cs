@@ -126,6 +126,175 @@ public class WebServiceTesterTests
 		}
 	}
 
+	public class RequestCreationTests : WebServiceTesterTests
+	{
+		private WebServiceTester _tester;
+		private DelegateHttpMessageHandler _handler;
+		private HttpClient _httpClient;
+
+		[SetUp]
+		public void Setup()
+		{
+			var stream = ReadFromResource("petstore_swagger.json");
+
+			_handler = new DelegateHttpMessageHandler
+			{
+				RequestDelegate = (request) =>
+				{
+					return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { RequestMessage = request };
+				}
+			};
+
+			_httpClient = new HttpClient(_handler) { BaseAddress = new Uri("http://test.com") };
+
+			_tester = new WebServiceTester(stream);
+		}
+
+		[TearDown]
+		public void TearDown()
+		{
+			_handler?.Dispose();
+			_httpClient?.Dispose();
+		}
+
+		[Test]
+		public async Task Builds_Request_Uri_With_Parameters()
+		{
+			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
+			{
+				if (info.Path == "/pet/{petId}/uploadImage")
+				{
+					response.RequestMessage!.RequestUri!.AbsolutePath.Should().Be("/pet/1/uploadImage");
+				}
+			});
+		}
+
+		[Test]
+		public async Task Builds_Request_Uri_With_Custom_Parameters()
+		{
+			_tester.CustomParameterValue = (info) =>
+			{
+				if (info.Operation.OperationId == "uploadFile")
+					return "22";
+
+				return null;
+			};
+
+			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
+			{
+				if (info.Path == "/pet/{petId}/uploadImage")
+				{
+					response.RequestMessage!.RequestUri!.AbsolutePath.Should().Be("/pet/22/uploadImage");
+				}
+			});
+		}
+
+		[Test]
+		public async Task Builds_Request_With_MultiFormData_Content()
+		{
+			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
+			{
+				if (info.Path == "/pet/{petId}/uploadImage" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				{
+					response.RequestMessage!.Content.Should().NotBeNull();
+					response.RequestMessage!.Content.Should().BeOfType<MultipartFormDataContent>();
+					response.RequestMessage!.Content.As<MultipartFormDataContent>().Should().Contain(c => c is StringContent);
+					response.RequestMessage!.Content.As<MultipartFormDataContent>().Should().Contain(c => c is StreamContent);
+				}
+			});
+		}
+
+		[Test]
+		public async Task Builds_Request_With_Form_Content()
+		{
+			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
+			{
+				if (info.Path == "/pet/{petId}" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				{
+					response.RequestMessage!.Content.Should().NotBeNull();
+					response.RequestMessage!.Content.Should().BeOfType<FormUrlEncodedContent>();
+					var s = response.RequestMessage!.Content.As<FormUrlEncodedContent>().ReadAsStringAsync().Result;
+
+					s.Should().Be("name=test&status=test");
+				}
+			});
+		}
+
+		[Test]
+		public async Task Builds_Request_With_Form_Content_With_Custom_Values()
+		{
+			_tester.CustomParameterValue = (info) =>
+			{
+				if (info.Operation.OperationId == "updatePetWithForm" && info.ParameterName == "status")
+					return "active";
+
+				return null;
+			};
+
+			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
+			{
+				if (info.Path == "/pet/{petId}" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				{
+					response.RequestMessage!.Content.Should().NotBeNull();
+					response.RequestMessage!.Content.Should().BeOfType<FormUrlEncodedContent>();
+					var s = response.RequestMessage!.Content.As<FormUrlEncodedContent>().ReadAsStringAsync().Result;
+
+					s.Should().Be("name=test&status=active");
+				}
+			});
+		}
+
+		[Test]
+		public async Task Builds_Request_With_Json_Content()
+		{
+			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
+			{
+				if (info.Path == "/pet" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				{
+					response.RequestMessage!.Content.Should().NotBeNull();
+					response.RequestMessage!.Content.Should().BeOfType<StringContent>();
+					var s = response.RequestMessage!.Content.As<StringContent>().ReadAsStringAsync().Result;
+
+					s.Should().Be("""
+{
+"name": "test",
+"photoUrls": ["test"]
+}
+""");
+				}
+			});
+		}
+
+		[Test]
+		public async Task Builds_Request_With_Json_Content_With_Custom_Value()
+		{
+			_tester.CustomParameterValue = (info) =>
+			{
+				if (info.Operation.OperationId == "addPet" && info.ParameterName == "name")
+					return "Spike";
+
+				return null;
+			};
+
+			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
+			{
+				if (info.Path == "/pet" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				{
+					response.RequestMessage!.Content.Should().NotBeNull();
+					response.RequestMessage!.Content.Should().BeOfType<StringContent>();
+					var s = response.RequestMessage!.Content.As<StringContent>().ReadAsStringAsync().Result;
+
+					s.Should().Be("""
+{
+"name": "Spike",
+"photoUrls": ["test"]
+}
+""");
+				}
+			});
+		}
+	}
+
 	private Stream ReadFromResource(string resourceName)
 	{
 		var stream = GetType().Assembly.GetManifestResourceStream($"NUnit.Extensions.Helpers.Tests.TestData.{resourceName}");

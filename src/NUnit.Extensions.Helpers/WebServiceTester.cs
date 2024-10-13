@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using Microsoft.OpenApi.Models;
 using Microsoft.OpenApi.Readers;
 
@@ -9,8 +10,12 @@ namespace NUnit.Extensions.Helpers;
 /// </summary>
 public class WebServiceTester
 {
-	private const string CONTENT_TYPE_FORM = "multipart/form-data";
+	private const string CONTENT_TYPE_MULTIPART_FORM = "multipart/form-data";
+	private const string CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
 	private const string SCHEMA_TYPE_FILE = "file";
+	private const string SCHEMA_TYPE_INTEGER = "integer";
+	private const string SCHEMA_TYPE_STRING = "string";
+	private const string SCHEMA_TYPE_ARRAY = "array";
 	private readonly string? _openApiDocumentPath;
 	private Stream? _openApiDocumentStream;
 	private OpenApiDocument? _openApiDocument;
@@ -18,12 +23,12 @@ public class WebServiceTester
 	/// <summary>
 	/// Gets or sets a delegate to customize the endpoint parameter value
 	/// </summary>
-	public Func<EndpointParameterInformation, string>? CustomParameterValue { get; set; }
+	public Func<EndpointParameterInformation, string?>? CustomParameterValue { get; set; }
 
 	/// <summary>
 	/// Gets or sets a delegate to customize the request content
 	/// </summary>
-	public Func<RequestContentInformation, HttpContent> CustomRequestContent { get; set; }
+	public Func<RequestContentInformation, HttpContent?>? CustomRequestContent { get; set; }
 
 	/// <summary>
 	/// Creates a new instance of <see cref=" WebServiceTester"/>
@@ -88,6 +93,27 @@ public class WebServiceTester
 		}
 	}
 
+	/// <summary>
+	/// Just for monkey test. Calls every endpoint
+	/// </summary>
+	/// <param name="httpClient"></param>
+	/// <param name="cancellationToken"></param>
+	/// <returns></returns>
+	public async Task CallEveryEndpoint(HttpClient httpClient, CancellationToken cancellationToken, Action<EndpointInformation, HttpResponseMessage>? handleResponseDelegate = null)
+	{
+		EnsureDocumentExists();
+
+		foreach (var path in _openApiDocument!.Paths)
+		{
+			foreach (var operation in path.Value.Operations)
+			{
+				var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
+
+				handleResponseDelegate?.Invoke(new EndpointInformation(path.Key, operation.Key, operation.Value), response);
+			}
+		}
+	}
+
 	private async Task<HttpResponseMessage> CallOperation(HttpClient httpClient, string path, OperationType operationType, OpenApiOperation operation, CancellationToken cancellationToken)
 	{
 		var request = new HttpRequestMessage(GetMethod(operationType), BuildRequestUri(path, operationType, operation));
@@ -108,16 +134,50 @@ public class WebServiceTester
 		if (result != null)
 			return result;
 
-		if (contentType == CONTENT_TYPE_FORM)
+		if (contentType == CONTENT_TYPE_MULTIPART_FORM)
 			return CreateMultiPartFormContent(content);
 
+		if (contentType == CONTENT_TYPE_FORM)
+			return CreateFormContent(content, path, operationType, operation);
+
 		// default = json
-		return CreateJsonContent(content);
+		return CreateJsonContent(content, path, operationType, operation);
 	}
 
-	private HttpContent CreateJsonContent(OpenApiMediaType content)
+	private HttpContent CreateFormContent(OpenApiMediaType content, string path, OperationType operationType, OpenApiOperation operation)
 	{
-		return new StringContent("{}");
+		var values = new Dictionary<string, string>();
+
+		foreach (var prop in content.Schema.Properties)
+			values.Add(prop.Key, GenerateParameterValue(prop.Value, prop.Key, path, operationType, operation, false));
+
+		return new FormUrlEncodedContent(values);
+	}
+
+	private HttpContent CreateJsonContent(OpenApiMediaType content, string path, OperationType operationType, OpenApiOperation operation)
+	{
+		var builder = new StringBuilder();
+		builder.AppendLine("{");
+
+		var isFirst = true;
+		foreach (var propName in content.Schema.Required)
+		{
+			if (!isFirst)
+				builder.AppendLine(",");
+
+			var prop = content.Schema.Properties[propName];
+			var value = GenerateParameterValue(prop, propName, path, operationType, operation, true);
+
+			if (prop.Type == SCHEMA_TYPE_ARRAY)
+				value = $"[{value}]";
+
+			builder.Append($"\"{propName}\": {value}");
+
+			isFirst = false;
+		}
+
+		builder.AppendLine().Append("}");
+		return new StringContent(builder.ToString(), Encoding.UTF8, "application/json");
 	}
 
 	private HttpContent CreateMultiPartFormContent(OpenApiMediaType content)
@@ -125,12 +185,12 @@ public class WebServiceTester
 		var form = new MultipartFormDataContent();
 
 		foreach (var prop in content.Schema.Properties)
-			form.Add(CreateFormContent(prop.Key, prop.Value), prop.Key);
+			form.Add(CreateFormData(prop.Key, prop.Value), prop.Key);
 
 		return form;
 	}
 
-	private HttpContent CreateFormContent(string partName, OpenApiSchema schema)
+	private HttpContent CreateFormData(string partName, OpenApiSchema schema)
 	{
 		if (schema.Type == SCHEMA_TYPE_FILE)
 			return new StreamContent(new MemoryStream(System.Text.Encoding.UTF8.GetBytes("Test content")));
@@ -149,11 +209,22 @@ public class WebServiceTester
 	}
 
 	private string GenerateParameterValue(OpenApiParameter param, string path, OperationType operationType, OpenApiOperation operation)
-	{
-		var result = CustomParameterValue?.Invoke(new EndpointParameterInformation(path, operationType, operation, param)) ?? "1";
+		=> GenerateParameterValue(param.Schema, param.Name, path, operationType, operation, false);
 
-		if (param.Schema.Format == "int64")
-			return "1";
+	private string GenerateParameterValue(OpenApiSchema schema, string parameterName, string path, OperationType operationType, OpenApiOperation operation, bool encloseStringValues)
+	{
+		if (schema.Type == SCHEMA_TYPE_ARRAY)
+			return GenerateParameterValue(schema.Items, parameterName, path, operationType, operation, encloseStringValues);
+
+		var result = "test";
+
+		if (schema.Type == SCHEMA_TYPE_INTEGER)
+			result = "1";
+
+		result = CustomParameterValue?.Invoke(new EndpointParameterInformation(path, operationType, operation, schema, parameterName)) ?? result;
+
+		if (schema.Type == SCHEMA_TYPE_STRING && encloseStringValues)
+			result = $"\"{result}\"";
 
 		return result;
 	}
