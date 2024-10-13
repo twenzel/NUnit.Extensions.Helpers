@@ -61,12 +61,14 @@ internal static class TestHelpers
 
 		// directly create an instance of the generator
 		// (Note: in the compiler this is loaded from an assembly, and created via reflection at runtime)
-		var generator = new TGenerator();
-		generator.AddGenerationInfoHeader = false;
-		generator.AddMarkerAttributes = false;
+		var generator = new TGenerator
+		{
+			AddGenerationInfoHeader = false,
+			AddMarkerAttributes = false
+		};
 
 		// Create the driver that will control the generation, passing in our generator
-		GeneratorDriver driver = generateDriver(generator);
+		var driver = generateDriver(generator);
 
 		// Create a clone of the compilation that we will use later
 		var clone = inputCompilation.Clone();
@@ -120,9 +122,11 @@ internal static class TestHelpers
 
 		// directly create an instance of the generator
 		// (Note: in the compiler this is loaded from an assembly, and created via reflection at runtime)
-		var generator = new TGenerator();
-		generator.AddGenerationInfoHeader = false;
-		generator.AddMarkerAttributes = false;
+		var generator = new TGenerator
+		{
+			AddGenerationInfoHeader = false,
+			AddMarkerAttributes = false
+		};
 
 		// Create the driver that will control the generation, passing in our generator
 		var driver = generateDriver(generator);
@@ -224,7 +228,7 @@ internal static class TestHelpers
 				.And.NotBeOfType<SyntaxNode>(because);
 
 			// Examine the object
-			Type type = node.GetType();
+			var type = node.GetType();
 			if (type.IsPrimitive || type.IsEnum || type == typeof(string))
 				return;
 
