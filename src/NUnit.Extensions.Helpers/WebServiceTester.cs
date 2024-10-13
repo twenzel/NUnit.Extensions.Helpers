@@ -77,6 +77,7 @@ public class WebServiceTester
 	/// <param name="httpClient"></param>
 	/// <param name="cancellationToken"></param>
 	/// <returns></returns>
+	[AssertionMethod]
 	public async Task VerifySecuredEndpointsRequiresAuthentication(HttpClient httpClient, CancellationToken cancellationToken)
 	{
 		EnsureDocumentExists();
@@ -99,6 +100,7 @@ public class WebServiceTester
 	/// <param name="httpClient"></param>
 	/// <param name="cancellationToken"></param>
 	/// <returns></returns>
+	[AssertionMethod]
 	public async Task CallEveryEndpoint(HttpClient httpClient, CancellationToken cancellationToken, Action<EndpointInformation, HttpResponseMessage>? handleResponseDelegate = null)
 	{
 		EnsureDocumentExists();
@@ -180,7 +182,7 @@ public class WebServiceTester
 		return new StringContent(builder.ToString(), Encoding.UTF8, "application/json");
 	}
 
-	private HttpContent CreateMultiPartFormContent(OpenApiMediaType content)
+	private static HttpContent CreateMultiPartFormContent(OpenApiMediaType content)
 	{
 		var form = new MultipartFormDataContent();
 
@@ -190,7 +192,7 @@ public class WebServiceTester
 		return form;
 	}
 
-	private HttpContent CreateFormData(string partName, OpenApiSchema schema)
+	private static HttpContent CreateFormData(string partName, OpenApiSchema schema)
 	{
 		if (schema.Type == SCHEMA_TYPE_FILE)
 			return new StreamContent(new MemoryStream(System.Text.Encoding.UTF8.GetBytes("Test content")));

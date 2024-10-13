@@ -15,11 +15,11 @@ internal static class ConstructorParameterTestGeneratorModelProvider
 		if (typeSymbol.BaseType != null && typeSymbol.BaseType.SpecialType != SpecialType.System_Object)
 			baseType = typeSymbol.BaseType.ToDisplayString();
 
-		EquatableList<ClassModel> classes = new();
+		EquatableList<ClassModel> classes = [];
 
 		foreach (var testClass in testClasses)
 		{
-			EquatableList<ConstructorModel> constructors = new();
+			EquatableList<ConstructorModel> constructors = [];
 			foreach (var ctor in testClass.InstanceConstructors)
 				ResolveConstructors(constructors, ctor);
 
@@ -35,7 +35,7 @@ internal static class ConstructorParameterTestGeneratorModelProvider
 
 	private static void ResolveConstructors(EquatableList<ConstructorModel> constructors, IMethodSymbol ctor)
 	{
-		EquatableList<ParameterModel> parameters = new();
+		EquatableList<ParameterModel> parameters = [];
 
 		foreach (var parameter in ctor.Parameters)
 		{
