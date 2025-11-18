@@ -17,8 +17,8 @@ public record EndpointParameterInformation : EndpointInformation
 	/// </summary>
 	public string? ParameterName { get; init; }
 
-	public EndpointParameterInformation(string path, HttpMethod operationType, OpenApiOperation operation, IOpenApiSchema? schema, string? name)
-		: base(path, operationType, operation)
+	public EndpointParameterInformation(string path, HttpMethod httpMethod, OpenApiOperation operation, IOpenApiSchema? schema, string? name)
+		: base(path, httpMethod, operation)
 	{
 		Schema = schema;
 		ParameterName = name;

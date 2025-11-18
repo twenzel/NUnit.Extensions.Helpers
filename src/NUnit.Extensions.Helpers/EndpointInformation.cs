@@ -15,7 +15,7 @@ public record EndpointInformation
 	/// <summary>
 	/// Gets the endpoint operation type (POST, GET,...)
 	/// </summary>
-	public HttpMethod OperationType { get; }
+	public HttpMethod HttpMethod { get; }
 
 	/// <summary>
 	/// Gets the operation information
@@ -26,12 +26,12 @@ public record EndpointInformation
 	/// Creates a new instance of <see cref="EndpointInformation"/>
 	/// </summary>
 	/// <param name="path">The defined path</param>
-	/// <param name="operationType">The endpoint operation type (POST, GET,...)</param>
+	/// <param name="httpMethod">The endpoint operation type (POST, GET,...)</param>
 	/// <param name="operation">The operation information</param>
-	public EndpointInformation(string path, HttpMethod operationType, OpenApiOperation operation)
+	public EndpointInformation(string path, HttpMethod httpMethod, OpenApiOperation operation)
 	{
 		Path = path;
-		OperationType = operationType;
+		HttpMethod = httpMethod;
 		Operation = operation;
 	}
 }

@@ -118,22 +118,22 @@ public class WebServiceTester
 		}
 	}
 
-	private async Task<HttpResponseMessage> CallOperation(HttpClient httpClient, string path, HttpMethod operationType, OpenApiOperation operation, CancellationToken cancellationToken)
+	private async Task<HttpResponseMessage> CallOperation(HttpClient httpClient, string path, HttpMethod httpMethod, OpenApiOperation operation, CancellationToken cancellationToken)
 	{
-		var request = new HttpRequestMessage(operationType, BuildRequestUri(path, operationType, operation));
+		var request = new HttpRequestMessage(httpMethod, BuildRequestUri(path, httpMethod, operation));
 
 		if (operation.RequestBody?.Content?.Count > 0)
 		{
 			var firstEntry = operation.RequestBody.Content.First();
-			request.Content = CreateRequestContent(operation, firstEntry.Key, firstEntry.Value, path, operationType);
+			request.Content = CreateRequestContent(operation, firstEntry.Key, firstEntry.Value, path, httpMethod);
 		}
 
 		return await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 	}
 
-	private HttpContent CreateRequestContent(OpenApiOperation operation, string contentType, IOpenApiMediaType content, string path, HttpMethod operationType)
+	private HttpContent CreateRequestContent(OpenApiOperation operation, string contentType, OpenApiMediaType content, string path, HttpMethod httpMethod)
 	{
-		var result = CustomRequestContent?.Invoke(new RequestContentInformation(operation, contentType, content, path, operationType));
+		var result = CustomRequestContent?.Invoke(new RequestContentInformation(operation, contentType, content, path, httpMethod));
 
 		if (result != null)
 			return result;
@@ -142,26 +142,26 @@ public class WebServiceTester
 			return CreateMultiPartFormContent(content);
 
 		if (contentType == CONTENT_TYPE_FORM)
-			return CreateFormContent(content, path, operationType, operation);
+			return CreateFormContent(content, path, httpMethod, operation);
 
 		// default = json
-		return CreateJsonContent(content, path, operationType, operation);
+		return CreateJsonContent(content, path, httpMethod, operation);
 	}
 
-	private HttpContent CreateFormContent(IOpenApiMediaType content, string path, HttpMethod operationType, OpenApiOperation operation)
+	private HttpContent CreateFormContent(OpenApiMediaType content, string path, HttpMethod httpMethod, OpenApiOperation operation)
 	{
 		var values = new Dictionary<string, string>();
 
 		if (content.Schema?.Properties != null)
 		{
 			foreach (var prop in content.Schema.Properties)
-				values.Add(prop.Key, GenerateParameterValue(prop.Value, prop.Key, path, operationType, operation, false));
+				values.Add(prop.Key, GenerateParameterValue(prop.Value, prop.Key, path, httpMethod, operation, false));
 		}
 
 		return new FormUrlEncodedContent(values);
 	}
 
-	private HttpContent CreateJsonContent(IOpenApiMediaType content, string path, HttpMethod operationType, OpenApiOperation operation)
+	private HttpContent CreateJsonContent(OpenApiMediaType content, string path, HttpMethod httpMethod, OpenApiOperation operation)
 	{
 		var builder = new StringBuilder();
 		builder.AppendLine("{");
@@ -175,7 +175,7 @@ public class WebServiceTester
 					builder.AppendLine(",");
 
 				var prop = content.Schema?.Properties?[propName];
-				var value = GenerateParameterValue(prop, propName, path, operationType, operation, true);
+				var value = GenerateParameterValue(prop, propName, path, httpMethod, operation, true);
 
 				if (prop?.Type == JsonSchemaType.Array)
 					value = $"[{value}]";
@@ -190,7 +190,7 @@ public class WebServiceTester
 		return new StringContent(builder.ToString(), Encoding.UTF8, "application/json");
 	}
 
-	private static HttpContent CreateMultiPartFormContent(IOpenApiMediaType content)
+	private static HttpContent CreateMultiPartFormContent(OpenApiMediaType content)
 	{
 		var form = new MultipartFormDataContent();
 
@@ -211,30 +211,30 @@ public class WebServiceTester
 		return new StringContent(string.Empty);
 	}
 
-	private string BuildRequestUri(string path, HttpMethod operationType, OpenApiOperation operation)
+	private string BuildRequestUri(string path, HttpMethod httpMethod, OpenApiOperation operation)
 	{
 		var result = path;
 
 		foreach (var param in operation.Parameters.Where(p => p.In == ParameterLocation.Path))
-			result = result.Replace($"{{{param.Name}}}", GenerateParameterValue(param, path, operationType, operation));
+			result = result.Replace($"{{{param.Name}}}", GenerateParameterValue(param, path, httpMethod, operation));
 
 		return result;
 	}
 
-	private string GenerateParameterValue(IOpenApiParameter param, string path, HttpMethod operationType, OpenApiOperation operation)
-		=> GenerateParameterValue(param.Schema, param.Name, path, operationType, operation, false);
+	private string GenerateParameterValue(IOpenApiParameter param, string path, HttpMethod httpMethod, OpenApiOperation operation)
+		=> GenerateParameterValue(param.Schema, param.Name, path, httpMethod, operation, false);
 
-	private string GenerateParameterValue(IOpenApiSchema? schema, string? parameterName, string path, HttpMethod operationType, OpenApiOperation operation, bool encloseStringValues)
+	private string GenerateParameterValue(IOpenApiSchema? schema, string? parameterName, string path, HttpMethod httpMethod, OpenApiOperation operation, bool encloseStringValues)
 	{
 		if (schema?.Type == JsonSchemaType.Array)
-			return GenerateParameterValue(schema.Items, parameterName, path, operationType, operation, encloseStringValues);
+			return GenerateParameterValue(schema.Items, parameterName, path, httpMethod, operation, encloseStringValues);
 
 		var result = "test";
 
 		if (schema?.Type == JsonSchemaType.Integer)
 			result = "1";
 
-		result = CustomParameterValue?.Invoke(new EndpointParameterInformation(path, operationType, operation, schema, parameterName)) ?? result;
+		result = CustomParameterValue?.Invoke(new EndpointParameterInformation(path, httpMethod, operation, schema, parameterName)) ?? result;
 
 		if (schema?.Type == JsonSchemaType.String && encloseStringValues)
 			result = $"\"{result}\"";

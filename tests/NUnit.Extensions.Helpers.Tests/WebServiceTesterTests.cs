@@ -194,7 +194,7 @@ public class WebServiceTesterTests
 		{
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet/{petId}/uploadImage" && info.OperationType == HttpMethod.Post)
+				if (info.Path == "/pet/{petId}/uploadImage" && info.HttpMethod == HttpMethod.Post)
 				{
 					response.RequestMessage!.Content.ShouldNotBeNull();
 					response.RequestMessage!.Content.ShouldBeOfType<MultipartFormDataContent>();
@@ -210,7 +210,7 @@ public class WebServiceTesterTests
 		{
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet/{petId}" && info.OperationType == HttpMethod.Post)
+				if (info.Path == "/pet/{petId}" && info.HttpMethod == HttpMethod.Post)
 				{
 					response.RequestMessage!.Content.ShouldNotBeNull();
 					response.RequestMessage!.Content.ShouldBeOfType<FormUrlEncodedContent>();
@@ -235,7 +235,7 @@ public class WebServiceTesterTests
 
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet/{petId}" && info.OperationType == HttpMethod.Post)
+				if (info.Path == "/pet/{petId}" && info.HttpMethod == HttpMethod.Post)
 				{
 					response.RequestMessage!.Content.ShouldNotBeNull();
 					response.RequestMessage!.Content.ShouldBeOfType<FormUrlEncodedContent>();
@@ -252,7 +252,7 @@ public class WebServiceTesterTests
 		{
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet" && info.OperationType == HttpMethod.Post)
+				if (info.Path == "/pet" && info.HttpMethod == HttpMethod.Post)
 				{
 					response.RequestMessage!.Content.ShouldNotBeNull();
 					response.RequestMessage!.Content.ShouldBeOfType<StringContent>();
@@ -282,7 +282,7 @@ public class WebServiceTesterTests
 
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet" && info.OperationType == HttpMethod.Post)
+				if (info.Path == "/pet" && info.HttpMethod == HttpMethod.Post)
 				{
 					response.RequestMessage!.Content.ShouldNotBeNull();
 					response.RequestMessage!.Content.ShouldBeOfType<StringContent>();
