@@ -1,8 +1,7 @@
-#tool "dotnet:?package=GitVersion.Tool&version=5.12.0"
-#tool "nuget:?package=dotnet-sonarscanner&version=8.0.2"
-#tool "nuget:?package=NuGet.CommandLine&version=6.11.0"
+#tool "dotnet:?package=GitVersion.Tool&version=6.5.0"
+#tool "nuget:?package=dotnet-sonarscanner&version=11.0.0"
 
-#addin "nuget:?package=Cake.Sonar&version=1.1.33"
+#addin "nuget:?package=Cake.Sonar&version=5.0.0"
 
 var target = Argument("target", "Default");
 var nugetApiKey = Argument("nugetApiKey", EnvironmentVariable("nugetApiKey"));
@@ -95,7 +94,7 @@ Task("Build")
 		{
 			Version =  versionInfo.AssemblySemVer,
 			InformationalVersion = versionInfo.InformationalVersion,
-			PackageVersion = versionInfo.NuGetVersionV2
+			PackageVersion = versionInfo.SemVer
 		}.WithProperty("PackageOutputPath", packageOutputDir.FullPath);	
 
 		var settings = new DotNetBuildSettings {
@@ -164,12 +163,18 @@ Task("SonarEnd")
 			return;
 		}
 		
-		// Push the package.
-		NuGetPush(packages, new NuGetPushSettings {
-			Source = nugetPublishFeed,
-			ApiKey = nugetApiKey,
-			SkipDuplicate = true
-		});	
+		foreach (var package in packages)
+		{
+			Information($"Found package to upload: {package.FullPath}");
+
+			// Push the package
+			DotNetNuGetPush(package, new DotNetNuGetPushSettings {
+				Source = nugetPublishFeed,
+				ApiKey = nugetApiKey,
+				SkipDuplicate = true
+			});	
+		}
+		
 	});
 
 //////////////////////////////////////////////////////////////////////
