@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text;
-using Microsoft.OpenApi.Models;
-using Microsoft.OpenApi.Readers;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 
 namespace NUnit.Extensions.Helpers;
 
@@ -12,10 +12,6 @@ public class WebServiceTester
 {
 	private const string CONTENT_TYPE_MULTIPART_FORM = "multipart/form-data";
 	private const string CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
-	private const string SCHEMA_TYPE_FILE = "file";
-	private const string SCHEMA_TYPE_INTEGER = "integer";
-	private const string SCHEMA_TYPE_STRING = "string";
-	private const string SCHEMA_TYPE_ARRAY = "array";
 	private readonly string? _openApiDocumentPath;
 	private Stream? _openApiDocumentStream;
 	private OpenApiDocument? _openApiDocument;
@@ -51,7 +47,7 @@ public class WebServiceTester
 		_openApiDocumentStream = openApiDocument ?? throw new ArgumentNullException(nameof(openApiDocument));
 	}
 
-	private void ReadOpenApiDocument()
+	private async Task ReadOpenApiDocument()
 	{
 		var canCloseStream = false;
 		if (!string.IsNullOrEmpty(_openApiDocumentPath))
@@ -63,7 +59,10 @@ public class WebServiceTester
 			canCloseStream = true;
 		}
 
-		_openApiDocument = new OpenApiStreamReader().Read(_openApiDocumentStream, out var diagnostic);
+		if (_openApiDocumentStream == null)
+			throw new InvalidOperationException("No OpenApi document source specified");
+
+		(_openApiDocument, var diagnostic) = await OpenApiDocument.LoadAsync(_openApiDocumentStream);
 
 		if (canCloseStream && _openApiDocumentStream != null)
 			_openApiDocumentStream.Close();
@@ -80,7 +79,7 @@ public class WebServiceTester
 	[AssertionMethod]
 	public async Task VerifySecuredEndpointsRequiresAuthentication(HttpClient httpClient, CancellationToken cancellationToken)
 	{
-		EnsureDocumentExists();
+		await EnsureDocumentExists();
 
 		foreach (var path in _openApiDocument!.Paths)
 		{
@@ -103,24 +102,27 @@ public class WebServiceTester
 	[AssertionMethod]
 	public async Task CallEveryEndpoint(HttpClient httpClient, CancellationToken cancellationToken, Action<EndpointInformation, HttpResponseMessage>? handleResponseDelegate = null)
 	{
-		EnsureDocumentExists();
+		await EnsureDocumentExists();
 
 		foreach (var path in _openApiDocument!.Paths)
 		{
-			foreach (var operation in path.Value.Operations)
+			if (path.Value.Operations != null)
 			{
-				var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
+				foreach (var operation in path.Value.Operations)
+				{
+					var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
 
-				handleResponseDelegate?.Invoke(new EndpointInformation(path.Key, operation.Key, operation.Value), response);
+					handleResponseDelegate?.Invoke(new EndpointInformation(path.Key, operation.Key, operation.Value), response);
+				}
 			}
 		}
 	}
 
-	private async Task<HttpResponseMessage> CallOperation(HttpClient httpClient, string path, OperationType operationType, OpenApiOperation operation, CancellationToken cancellationToken)
+	private async Task<HttpResponseMessage> CallOperation(HttpClient httpClient, string path, HttpMethod operationType, OpenApiOperation operation, CancellationToken cancellationToken)
 	{
-		var request = new HttpRequestMessage(GetMethod(operationType), BuildRequestUri(path, operationType, operation));
+		var request = new HttpRequestMessage(operationType, BuildRequestUri(path, operationType, operation));
 
-		if (operation.RequestBody != null && operation.RequestBody.Content.Count > 0)
+		if (operation.RequestBody?.Content?.Count > 0)
 		{
 			var firstEntry = operation.RequestBody.Content.First();
 			request.Content = CreateRequestContent(operation, firstEntry.Key, firstEntry.Value, path, operationType);
@@ -129,7 +131,7 @@ public class WebServiceTester
 		return await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 	}
 
-	private HttpContent CreateRequestContent(OpenApiOperation operation, string contentType, OpenApiMediaType content, string path, OperationType operationType)
+	private HttpContent CreateRequestContent(OpenApiOperation operation, string contentType, IOpenApiMediaType content, string path, HttpMethod operationType)
 	{
 		var result = CustomRequestContent?.Invoke(new RequestContentInformation(operation, contentType, content, path, operationType));
 
@@ -146,61 +148,70 @@ public class WebServiceTester
 		return CreateJsonContent(content, path, operationType, operation);
 	}
 
-	private HttpContent CreateFormContent(OpenApiMediaType content, string path, OperationType operationType, OpenApiOperation operation)
+	private HttpContent CreateFormContent(IOpenApiMediaType content, string path, HttpMethod operationType, OpenApiOperation operation)
 	{
 		var values = new Dictionary<string, string>();
 
-		foreach (var prop in content.Schema.Properties)
-			values.Add(prop.Key, GenerateParameterValue(prop.Value, prop.Key, path, operationType, operation, false));
+		if (content.Schema?.Properties != null)
+		{
+			foreach (var prop in content.Schema.Properties)
+				values.Add(prop.Key, GenerateParameterValue(prop.Value, prop.Key, path, operationType, operation, false));
+		}
 
 		return new FormUrlEncodedContent(values);
 	}
 
-	private HttpContent CreateJsonContent(OpenApiMediaType content, string path, OperationType operationType, OpenApiOperation operation)
+	private HttpContent CreateJsonContent(IOpenApiMediaType content, string path, HttpMethod operationType, OpenApiOperation operation)
 	{
 		var builder = new StringBuilder();
 		builder.AppendLine("{");
 
 		var isFirst = true;
-		foreach (var propName in content.Schema.Required)
+		if (content.Schema?.Required != null)
 		{
-			if (!isFirst)
-				builder.AppendLine(",");
+			foreach (var propName in content.Schema.Required)
+			{
+				if (!isFirst)
+					builder.AppendLine(",");
 
-			var prop = content.Schema.Properties[propName];
-			var value = GenerateParameterValue(prop, propName, path, operationType, operation, true);
+				var prop = content.Schema?.Properties?[propName];
+				var value = GenerateParameterValue(prop, propName, path, operationType, operation, true);
 
-			if (prop.Type == SCHEMA_TYPE_ARRAY)
-				value = $"[{value}]";
+				if (prop?.Type == JsonSchemaType.Array)
+					value = $"[{value}]";
 
-			builder.Append($"\"{propName}\": {value}");
+				builder.Append($"\"{propName}\": {value}");
 
-			isFirst = false;
+				isFirst = false;
+			}
 		}
 
 		builder.AppendLine().Append("}");
 		return new StringContent(builder.ToString(), Encoding.UTF8, "application/json");
 	}
 
-	private static HttpContent CreateMultiPartFormContent(OpenApiMediaType content)
+	private static HttpContent CreateMultiPartFormContent(IOpenApiMediaType content)
 	{
 		var form = new MultipartFormDataContent();
 
-		foreach (var prop in content.Schema.Properties)
-			form.Add(CreateFormData(prop.Key, prop.Value), prop.Key);
+		if (content.Schema?.Properties != null)
+		{
+			foreach (var prop in content.Schema.Properties)
+				form.Add(CreateFormData(prop.Value, prop.Key), prop.Key);
+		}
 
 		return form;
 	}
 
-	private static HttpContent CreateFormData(string partName, OpenApiSchema schema)
+	private static HttpContent CreateFormData(IOpenApiSchema schema, string name)
 	{
-		if (schema.Type == SCHEMA_TYPE_FILE)
+		if (schema.Format == "binary" || name == "file")
 			return new StreamContent(new MemoryStream(System.Text.Encoding.UTF8.GetBytes("Test content")));
 
 		return new StringContent(string.Empty);
 	}
 
-	private string BuildRequestUri(string path, OperationType operationType, OpenApiOperation operation)
+	private string BuildRequestUri(string path, HttpMethod operationType, OpenApiOperation operation)
 	{
 		var result = path;
 
@@ -210,52 +221,36 @@ public class WebServiceTester
 		return result;
 	}
 
-	private string GenerateParameterValue(OpenApiParameter param, string path, OperationType operationType, OpenApiOperation operation)
+	private string GenerateParameterValue(IOpenApiParameter param, string path, HttpMethod operationType, OpenApiOperation operation)
 		=> GenerateParameterValue(param.Schema, param.Name, path, operationType, operation, false);
 
-	private string GenerateParameterValue(OpenApiSchema schema, string parameterName, string path, OperationType operationType, OpenApiOperation operation, bool encloseStringValues)
+	private string GenerateParameterValue(IOpenApiSchema? schema, string? parameterName, string path, HttpMethod operationType, OpenApiOperation operation, bool encloseStringValues)
 	{
-		if (schema.Type == SCHEMA_TYPE_ARRAY)
+		if (schema?.Type == JsonSchemaType.Array)
 			return GenerateParameterValue(schema.Items, parameterName, path, operationType, operation, encloseStringValues);
 
 		var result = "test";
 
-		if (schema.Type == SCHEMA_TYPE_INTEGER)
+		if (schema?.Type == JsonSchemaType.Integer)
 			result = "1";
 
 		result = CustomParameterValue?.Invoke(new EndpointParameterInformation(path, operationType, operation, schema, parameterName)) ?? result;
 
-		if (schema.Type == SCHEMA_TYPE_STRING && encloseStringValues)
+		if (schema?.Type == JsonSchemaType.String && encloseStringValues)
 			result = $"\"{result}\"";
 
 		return result;
 	}
 
-	private static HttpMethod GetMethod(OperationType operationType)
-	{
-		return operationType switch
-		{
-			OperationType.Get => HttpMethod.Get,
-			OperationType.Put => HttpMethod.Put,
-			OperationType.Post => HttpMethod.Post,
-			OperationType.Delete => HttpMethod.Delete,
-			OperationType.Options => HttpMethod.Options,
-			OperationType.Head => HttpMethod.Head,
-			OperationType.Patch => new HttpMethod("PATCH"),
-			OperationType.Trace => HttpMethod.Trace,
-			_ => throw new InvalidOperationException($"Operation type {operationType} is not supported"),
-		};
-	}
-
 	private static bool IsSecured(OpenApiOperation operation)
 	{
-		return operation.Security.Count > 0;
+		return operation.Security?.Count > 0;
 	}
 
-	private void EnsureDocumentExists()
+	private async Task EnsureDocumentExists()
 	{
 		if (_openApiDocument == null)
-			ReadOpenApiDocument();
+			await ReadOpenApiDocument();
 
 		if (_openApiDocument == null)
 			throw new InvalidOperationException("Could not read OpenApi document");
@@ -265,6 +260,9 @@ public class WebServiceTester
 	{
 		if (diagnostic != null && diagnostic.Errors.Count > 0)
 		{
+			if (diagnostic.Errors.Count == 1 && diagnostic.Errors[0].Message == "Version node not found.")
+				throw new OpenApiUnsupportedSpecVersionException("Version node not found.");
+
 			var errors = string.Join(Environment.NewLine, diagnostic.Errors);
 			throw new InvalidOperationException($"Could not read OpenApi document.\r\n{errors}");
 		}

@@ -1,5 +1,5 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace NUnit.Extensions.Helpers;
 
-public record RequestContentInformation(OpenApiOperation Operation, string ContentType, OpenApiMediaType Content, string Path, OperationType OperationType);
+public record RequestContentInformation(OpenApiOperation Operation, string ContentType, IOpenApiMediaType Content, string Path, HttpMethod OperationType);

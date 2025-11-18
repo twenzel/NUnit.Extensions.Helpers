@@ -1,10 +1,10 @@
 using System.Collections.Immutable;
 using System.Reflection;
-using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using NUnit.Extensions.Helpers.Generators;
 using NUnit.Extensions.Helpers.Generators.Internal;
+using Shouldly;
 
 namespace NUnit.Extensions.Helpers.Tests;
 
@@ -57,7 +57,7 @@ internal static class TestHelpers
 	{
 		// Ensure compilation has no errors
 		var compilationDiagnostics = inputCompilation.GetDiagnostics(CancellationToken.None).Where(d => d.Severity == DiagnosticSeverity.Error);
-		compilationDiagnostics.Should().HaveCount(0, string.Join(Environment.NewLine, compilationDiagnostics.Select(d => d.GetMessage())));
+		compilationDiagnostics.Count().ShouldBe(0, string.Join(Environment.NewLine, compilationDiagnostics.Select(d => d.GetMessage())));
 
 		// directly create an instance of the generator
 		// (Note: in the compiler this is loaded from an assembly, and created via reflection at runtime)
@@ -78,20 +78,20 @@ internal static class TestHelpers
 		driver = driver.RunGeneratorsAndUpdateCompilation(inputCompilation, out var outputCompilation, out var diagnostics, CancellationToken.None);
 
 		// We can now assert things about the resulting compilation:
-		diagnostics.IsEmpty.Should().BeTrue(string.Join(Environment.NewLine, diagnostics.Select(d => d.GetMessage()))); // there were no diagnostics created by the generators
+		diagnostics.IsEmpty.ShouldBeTrue(string.Join(Environment.NewLine, diagnostics.Select(d => d.GetMessage()))); // there were no diagnostics created by the generators
 
 		// Or we can look at the results directly:
 		var runResult = driver.GetRunResult();
 
 		// The runResult contains the combined results of all generators passed to the driver
-		runResult.GeneratedTrees.Should().HaveCount(expectedSourcesCount);
-		runResult.Diagnostics.IsEmpty.Should().BeTrue();
+		runResult.GeneratedTrees.Length.ShouldBe(expectedSourcesCount);
+		runResult.Diagnostics.IsEmpty.ShouldBeTrue();
 
 		// Or you can access the individual results on a by-generator basis
 		var generatorResult = runResult.Results[0];
-		generatorResult.Diagnostics.IsEmpty.Should().BeTrue();
-		generatorResult.GeneratedSources.Should().HaveCount(expectedSourcesCount);
-		generatorResult.Exception.Should().BeNull();
+		generatorResult.Diagnostics.IsEmpty.ShouldBeTrue();
+		generatorResult.GeneratedSources.Length.ShouldBe(expectedSourcesCount);
+		generatorResult.Exception.ShouldBeNull();
 
 		// assert caching
 		if (assertCaching)
@@ -107,8 +107,7 @@ internal static class TestHelpers
 						.TrackedOutputSteps
 						.SelectMany(x => x.Value) // step executions
 						.SelectMany(x => x.Outputs) // execution results
-						.Should()
-						.OnlyContain(x => x.Reason == IncrementalStepRunReason.Cached);
+						.ShouldAllBe(x => x.Reason == IncrementalStepRunReason.Cached);
 		}
 
 		return generatorResult;
@@ -118,7 +117,7 @@ internal static class TestHelpers
 	{
 		// Ensure compilation has no errors
 		var compilationDiagnostics = inputCompilation.GetDiagnostics(CancellationToken.None).Where(d => d.Severity == DiagnosticSeverity.Error);
-		compilationDiagnostics.Should().HaveCount(0, string.Join(Environment.NewLine, compilationDiagnostics.Select(d => d.GetMessage())));
+		compilationDiagnostics.Count().ShouldBe(0, string.Join(Environment.NewLine, compilationDiagnostics.Select(d => d.GetMessage())));
 
 		// directly create an instance of the generator
 		// (Note: in the compiler this is loaded from an assembly, and created via reflection at runtime)
@@ -152,10 +151,10 @@ internal static class TestHelpers
 		var trackedSteps2 = GetTrackedSteps(runResult2, trackingNames);
 
 		// Both runs should have the same tracked steps
-		trackedSteps1.Should()
-					 .NotBeEmpty()
-					 .And.HaveSameCount(trackedSteps2)
-					 .And.ContainKeys(trackedSteps2.Keys);
+		trackedSteps1.ShouldNotBeEmpty();
+		trackedSteps1.Count.ShouldBe(trackedSteps2.Count);
+		foreach (var key in trackedSteps2.Keys)
+			trackedSteps1.ShouldContainKey(key);
 
 		// Get the IncrementalGeneratorRunStep collection for each run
 		foreach (var (trackingName, runSteps1) in trackedSteps1)
@@ -178,7 +177,7 @@ internal static class TestHelpers
 
 	private static void AssertEqual(ImmutableArray<IncrementalGeneratorRunStep> runSteps1, ImmutableArray<IncrementalGeneratorRunStep> runSteps2, string stepName)
 	{
-		runSteps1.Should().HaveSameCount(runSteps2);
+		runSteps1.Length.ShouldBe(runSteps2.Length);
 
 		for (var i = 0; i < runSteps1.Length; i++)
 		{
@@ -189,14 +188,12 @@ internal static class TestHelpers
 			var outputs1 = runStep1.Outputs.Select(x => x.Value);
 			var outputs2 = runStep2.Outputs.Select(x => x.Value);
 
-			outputs1.Should()
-					.Equal(outputs2, $"because {stepName} should produce cacheable outputs");
+			outputs1.ShouldBe(outputs2, $"because {stepName} should produce cacheable outputs");
 
 			// Therefore, on the second run the results should always be cached or unchanged!
 			// - Unchanged is when the _input_ has changed, but the output hasn't
 			// - Cached is when the the input has not changed, so the cached output is used 
-			runStep2.Outputs.Should()
-				.OnlyContain(
+			runStep2.Outputs.ShouldAllBe(
 					x => x.Reason == IncrementalStepRunReason.Cached || x.Reason == IncrementalStepRunReason.Unchanged,
 					$"{stepName} expected to have reason {IncrementalStepRunReason.Cached} or {IncrementalStepRunReason.Unchanged}");
 
@@ -222,10 +219,9 @@ internal static class TestHelpers
 				return;
 
 			// Make sure it's not a banned type
-			node.Should()
-				.NotBeOfType<Compilation>(because)
-				.And.NotBeOfType<ISymbol>(because)
-				.And.NotBeOfType<SyntaxNode>(because);
+			node.ShouldNotBeOfType<Compilation>(because);
+			node.ShouldNotBeOfType<ISymbol>(because);
+			node.ShouldNotBeOfType<SyntaxNode>(because);
 
 			// Examine the object
 			var type = node.GetType();

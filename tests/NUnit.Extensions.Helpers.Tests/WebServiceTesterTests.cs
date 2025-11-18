@@ -1,5 +1,5 @@
 using System.Text;
-using FluentAssertions;
+using Shouldly;
 
 namespace NUnit.Extensions.Helpers.Tests;
 
@@ -12,14 +12,14 @@ public class WebServiceTesterTests
 		public void Throws_Exception_If_Path_Is_Null(string? path)
 		{
 			var action = () => new WebServiceTester(path!);
-			action.Should().Throw<ArgumentException>();
+			action.ShouldThrow<ArgumentException>();
 		}
 
 		[Test]
 		public void Throws_Exception_If_Stream_Is_Null()
 		{
 			var action = () => new WebServiceTester((Stream)null!);
-			action.Should().Throw<ArgumentNullException>().Which.Message.Should().Be("Value cannot be null. (Parameter 'openApiDocument')");
+			action.ShouldThrow<ArgumentNullException>().Message.ShouldBe("Value cannot be null. (Parameter 'openApiDocument')");
 		}
 	}
 
@@ -28,7 +28,7 @@ public class WebServiceTesterTests
 	{
 		var helper = new WebServiceTester("somenotexistingfile.json");
 		var action = async () => await helper.VerifySecuredEndpointsRequiresAuthentication(null!, CancellationToken.None);
-		await action.Should().ThrowExactlyAsync<FileNotFoundException>();
+		await action.ShouldThrowAsync<FileNotFoundException>();
 	}
 
 	[Test]
@@ -38,7 +38,7 @@ public class WebServiceTesterTests
 
 		var helper = new WebServiceTester(stream);
 		var action = async () => await helper.VerifySecuredEndpointsRequiresAuthentication(null!, CancellationToken.None);
-		await action.Should().ThrowAsync<Microsoft.OpenApi.Readers.Exceptions.OpenApiUnsupportedSpecVersionException>();
+		await action.ShouldThrowAsync<Microsoft.OpenApi.OpenApiUnsupportedSpecVersionException>();
 	}
 
 	public class VerifySecuredEndpointsRequiresAuthenticationMethod : WebServiceTesterTests
@@ -73,7 +73,7 @@ public class WebServiceTesterTests
 
 			var helper = new WebServiceTester(stream);
 			await helper.VerifySecuredEndpointsRequiresAuthentication(httpClient, CancellationToken.None);
-			callCount.Should().Be(9);
+			callCount.ShouldBe(9);
 		}
 
 		[Test]
@@ -98,7 +98,7 @@ public class WebServiceTesterTests
 
 			var helper = new WebServiceTester(stream);
 			var action = async () => await helper.VerifySecuredEndpointsRequiresAuthentication(httpClient, CancellationToken.None);
-			await action.Should().ThrowAsync<TestFailedException>();
+			await action.ShouldThrowAsync<TestFailedException>();
 		}
 
 		[Test]
@@ -112,7 +112,7 @@ public class WebServiceTesterTests
 				{
 					if (request.RequestUri?.AbsolutePath == "/pet" && request.Method == HttpMethod.Post)
 					{
-						request.Content.Should().NotBeNull();
+						request.Content.ShouldNotBeNull();
 					}
 
 					return new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized);
@@ -164,7 +164,7 @@ public class WebServiceTesterTests
 			{
 				if (info.Path == "/pet/{petId}/uploadImage")
 				{
-					response.RequestMessage!.RequestUri!.AbsolutePath.Should().Be("/pet/1/uploadImage");
+					response.RequestMessage!.RequestUri!.AbsolutePath.ShouldBe("/pet/1/uploadImage");
 				}
 			});
 		}
@@ -184,7 +184,7 @@ public class WebServiceTesterTests
 			{
 				if (info.Path == "/pet/{petId}/uploadImage")
 				{
-					response.RequestMessage!.RequestUri!.AbsolutePath.Should().Be("/pet/22/uploadImage");
+					response.RequestMessage!.RequestUri!.AbsolutePath.ShouldBe("/pet/22/uploadImage");
 				}
 			});
 		}
@@ -194,12 +194,13 @@ public class WebServiceTesterTests
 		{
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet/{petId}/uploadImage" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				if (info.Path == "/pet/{petId}/uploadImage" && info.OperationType == HttpMethod.Post)
 				{
-					response.RequestMessage!.Content.Should().NotBeNull();
-					response.RequestMessage!.Content.Should().BeOfType<MultipartFormDataContent>();
-					response.RequestMessage!.Content.As<MultipartFormDataContent>().Should().Contain(c => c is StringContent);
-					response.RequestMessage!.Content.As<MultipartFormDataContent>().Should().Contain(c => c is StreamContent);
+					response.RequestMessage!.Content.ShouldNotBeNull();
+					response.RequestMessage!.Content.ShouldBeOfType<MultipartFormDataContent>();
+					var content = (MultipartFormDataContent)response.RequestMessage!.Content;
+					content.ShouldContain(c => c is StringContent);
+					content.ShouldContain(c => c is StreamContent);
 				}
 			});
 		}
@@ -209,13 +210,14 @@ public class WebServiceTesterTests
 		{
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet/{petId}" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				if (info.Path == "/pet/{petId}" && info.OperationType == HttpMethod.Post)
 				{
-					response.RequestMessage!.Content.Should().NotBeNull();
-					response.RequestMessage!.Content.Should().BeOfType<FormUrlEncodedContent>();
-					var s = response.RequestMessage!.Content.As<FormUrlEncodedContent>().ReadAsStringAsync().Result;
+					response.RequestMessage!.Content.ShouldNotBeNull();
+					response.RequestMessage!.Content.ShouldBeOfType<FormUrlEncodedContent>();
+					var content = (FormUrlEncodedContent)response.RequestMessage!.Content;
+					var s = content.ReadAsStringAsync().Result;
 
-					s.Should().Be("name=test&status=test");
+					s.ShouldBe("name=test&status=test");
 				}
 			});
 		}
@@ -233,13 +235,14 @@ public class WebServiceTesterTests
 
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet/{petId}" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				if (info.Path == "/pet/{petId}" && info.OperationType == HttpMethod.Post)
 				{
-					response.RequestMessage!.Content.Should().NotBeNull();
-					response.RequestMessage!.Content.Should().BeOfType<FormUrlEncodedContent>();
-					var s = response.RequestMessage!.Content.As<FormUrlEncodedContent>().ReadAsStringAsync().Result;
+					response.RequestMessage!.Content.ShouldNotBeNull();
+					response.RequestMessage!.Content.ShouldBeOfType<FormUrlEncodedContent>();
+					var content = (FormUrlEncodedContent)response.RequestMessage!.Content;
+					var s = content.ReadAsStringAsync().Result;
 
-					s.Should().Be("name=test&status=active");
+					s.ShouldBe("name=test&status=active");
 				}
 			});
 		}
@@ -249,13 +252,14 @@ public class WebServiceTesterTests
 		{
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				if (info.Path == "/pet" && info.OperationType == HttpMethod.Post)
 				{
-					response.RequestMessage!.Content.Should().NotBeNull();
-					response.RequestMessage!.Content.Should().BeOfType<StringContent>();
-					var s = response.RequestMessage!.Content.As<StringContent>().ReadAsStringAsync().Result;
+					response.RequestMessage!.Content.ShouldNotBeNull();
+					response.RequestMessage!.Content.ShouldBeOfType<StringContent>();
+					var content = (StringContent)response.RequestMessage!.Content;
+					var s = content.ReadAsStringAsync().Result;
 
-					s.Should().Be("""
+					s.ShouldBe("""
 {
 "name": "test",
 "photoUrls": ["test"]
@@ -278,13 +282,14 @@ public class WebServiceTesterTests
 
 			await _tester.CallEveryEndpoint(_httpClient, CancellationToken.None, (info, response) =>
 			{
-				if (info.Path == "/pet" && info.OperationType == Microsoft.OpenApi.Models.OperationType.Post)
+				if (info.Path == "/pet" && info.OperationType == HttpMethod.Post)
 				{
-					response.RequestMessage!.Content.Should().NotBeNull();
-					response.RequestMessage!.Content.Should().BeOfType<StringContent>();
-					var s = response.RequestMessage!.Content.As<StringContent>().ReadAsStringAsync().Result;
+					response.RequestMessage!.Content.ShouldNotBeNull();
+					response.RequestMessage!.Content.ShouldBeOfType<StringContent>();
+					var content = (StringContent)response.RequestMessage!.Content;
+					var s = content.ReadAsStringAsync().Result;
 
-					s.Should().Be("""
+					s.ShouldBe("""
 {
 "name": "Spike",
 "photoUrls": ["test"]

@@ -1,4 +1,4 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace NUnit.Extensions.Helpers;
 
@@ -10,14 +10,14 @@ public record EndpointParameterInformation : EndpointInformation
 	/// <summary>
 	/// Gets the schema information
 	/// </summary>
-	public OpenApiSchema Schema { get; init; }
+	public IOpenApiSchema? Schema { get; init; }
 
 	/// <summary>
 	/// Gets the parameter name
 	/// </summary>
-	public string ParameterName { get; init; }
+	public string? ParameterName { get; init; }
 
-	public EndpointParameterInformation(string path, OperationType operationType, OpenApiOperation operation, OpenApiSchema schema, string name)
+	public EndpointParameterInformation(string path, HttpMethod operationType, OpenApiOperation operation, IOpenApiSchema? schema, string? name)
 		: base(path, operationType, operation)
 	{
 		Schema = schema;

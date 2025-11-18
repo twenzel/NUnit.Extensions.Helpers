@@ -24,7 +24,7 @@ Add the NuGet package [NUnit.Extensions.Helpers](https://nuget.org/packages/NUni
 
 ### Information
 
-> Currently the generated source requires [Moq](https://nuget.org/packages/Moq) and [FluentAssertions](https://nuget.org/packages/FluentAssertions).
+> Currently the generated source requires [Moq](https://nuget.org/packages/Moq) and [Shouldly](https://nuget.org/packages/Shouldly).
 
 ## Usage
 
@@ -71,21 +71,21 @@ partial class DocumentTests
     public void Throws_Exception_When_MyStream_Is_Null()
     {
         Action action = () => new Document(null, null, null);
-        action.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("myStream");
+        action.ShouldThrow<ArgumentNullException>().ParamName.Should().Be("myStream");
     }
 
     [Test]
     public void Throws_Exception_When_FileTester_Is_Null()
     {
         Action action = () => new Document(Mock.Of<System.IO.Stream>(), null, null);
-        action.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("fileTester");
+        action.ShouldThrow<ArgumentNullException>().ParamName.Should().Be("fileTester");
     }
 
     [Test]
     public void Throws_Exception_When_Filter_Is_Null()
     {
         Action action = () => new Document(Mock.Of<System.IO.Stream>(), Mock.Of<Sample.IFileTester>(), null);
-        action.Should().Throw<ArgumentNullException>().Which.ParamName.Should().Be("filter");
+        action.ShouldThrow<ArgumentNullException>().ParamName.Should().Be("filter");
     }
 }
 

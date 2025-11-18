@@ -1,4 +1,4 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace NUnit.Extensions.Helpers;
 
@@ -15,7 +15,7 @@ public record EndpointInformation
 	/// <summary>
 	/// Gets the endpoint operation type (POST, GET,...)
 	/// </summary>
-	public OperationType OperationType { get; }
+	public HttpMethod OperationType { get; }
 
 	/// <summary>
 	/// Gets the operation information
@@ -28,7 +28,7 @@ public record EndpointInformation
 	/// <param name="path">The defined path</param>
 	/// <param name="operationType">The endpoint operation type (POST, GET,...)</param>
 	/// <param name="operation">The operation information</param>
-	public EndpointInformation(string path, OperationType operationType, OpenApiOperation operation)
+	public EndpointInformation(string path, HttpMethod operationType, OpenApiOperation operation)
 	{
 		Path = path;
 		OperationType = operationType;
