@@ -88,7 +88,7 @@ public class WebServiceTester
 				var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
 
 				if (response.StatusCode != HttpStatusCode.Unauthorized)
-					throw new TestFailedException($"Endpoint {response.RequestMessage.Method} {response.RequestMessage.RequestUri} ({operation.Value.Description ?? operation.Value.OperationId}) didn't return HTTP 401");
+					throw new TestFailedException($"Endpoint {operation.Key} {path.Key} ({operation.Value.Description ?? operation.Value.OperationId}) didn't return HTTP 401");
 			}
 		}
 	}
