@@ -215,8 +215,11 @@ public class WebServiceTester
 	{
 		var result = path;
 
-		foreach (var param in operation.Parameters.Where(p => p.In == ParameterLocation.Path))
-			result = result.Replace($"{{{param.Name}}}", GenerateParameterValue(param, path, httpMethod, operation));
+		if (operation.Parameters != null)
+		{
+			foreach (var param in operation.Parameters.Where(p => p.In == ParameterLocation.Path))
+				result = result.Replace($"{{{param.Name}}}", GenerateParameterValue(param, path, httpMethod, operation));
+		}
 
 		return result;
 	}
