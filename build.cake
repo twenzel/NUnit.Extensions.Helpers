@@ -1,5 +1,5 @@
-#tool "dotnet:?package=GitVersion.Tool&version=6.5.0"
-#tool "nuget:?package=dotnet-sonarscanner&version=11.0.0"
+#tool "dotnet:?package=GitVersion.Tool&version=6.7.0"
+#tool "nuget:?package=dotnet-sonarscanner&version=11.2.1"
 
 #addin "nuget:?package=Cake.Sonar&version=5.0.0"
 

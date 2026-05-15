@@ -79,6 +79,19 @@ public class WebServiceTester
 	[AssertionMethod]
 	public async Task VerifySecuredEndpointsRequiresAuthentication(HttpClient httpClient, CancellationToken cancellationToken)
 	{
+		await VerifySecuredEndpointsRequiresAuthentication(httpClient, cancellationToken, HttpStatusCode.Unauthorized);
+	}
+
+	/// <summary>
+	/// Verifies that all endpoints with security definition returns HTTP 401 if not authentication was given
+	/// </summary>
+	/// <param name="httpClient"></param>
+	/// <param name="cancellationToken"></param>
+	/// <param name="expectedStatusCodes">Expected status codes. Default is 401 Unauthorized</param>
+	/// <returns></returns>
+	[AssertionMethod]
+	public async Task VerifySecuredEndpointsRequiresAuthentication(HttpClient httpClient, CancellationToken cancellationToken, params HttpStatusCode[] expectedStatusCodes)
+	{
 		await EnsureDocumentExists();
 
 		foreach (var path in _openApiDocument!.Paths)
@@ -87,8 +100,8 @@ public class WebServiceTester
 			{
 				var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
 
-				if (response.StatusCode != HttpStatusCode.Unauthorized)
-					throw new TestFailedException($"Endpoint {operation.Key} {path.Key} ({operation.Value.Description ?? operation.Value.OperationId}) didn't return HTTP 401");
+				if (!expectedStatusCodes.Contains(response.StatusCode))
+					throw new TestFailedException($"Endpoint {operation.Key} {path.Key} ({operation.Value.Description ?? operation.Value.OperationId}) didn't return one of the expected status codes. Returned: {response.StatusCode}");
 			}
 		}
 	}
