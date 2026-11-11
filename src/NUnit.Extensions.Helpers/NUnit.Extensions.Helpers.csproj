@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <IsPackable>true</IsPackable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
@@ -31,12 +31,6 @@
 	 <ItemGroup>
     <InternalsVisibleTo Include="NUnit.Extensions.Helpers.Tests" />
   </ItemGroup>
-
-		<!-- nullables for netstandard2.0 -->
-	<!-- see https://www.meziantou.net/how-to-use-nullable-reference-types-in-dotnet-standard-2-0-and-dotnet-.htm -->
-	<ItemGroup>
-		<Compile Include="../Polyfills/*.cs" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<None Include="../../icon.png" Pack="true" PackagePath="\" />

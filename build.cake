@@ -1,7 +1,7 @@
 #tool "dotnet:?package=GitVersion.Tool&version=6.8.0"
-#tool "nuget:?package=dotnet-sonarscanner&version=11.2.1"
+#tool "nuget:?package=dotnet-sonarscanner&version=12.1.0"
 
-#addin "nuget:?package=Cake.Sonar&version=5.0.0"
+#addin "nuget:?package=Cake.Sonar&version=6.0.1"
 
 var target = Argument("target", "Default");
 var nugetApiKey = Argument("nugetApiKey", EnvironmentVariable("nugetApiKey"));

@@ -96,12 +96,15 @@ public class WebServiceTester
 
 		foreach (var path in _openApiDocument!.Paths)
 		{
-			foreach (var operation in path.Value.Operations.Where(o => IsSecured(o.Value)))
+			if (path.Value.Operations != null)
 			{
-				var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
+				foreach (var operation in path.Value.Operations.Where(o => IsSecured(o.Value)))
+				{
+					var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
 
-				if (!expectedStatusCodes.Contains(response.StatusCode))
-					throw new TestFailedException($"Endpoint {operation.Key} {path.Key} ({operation.Value.Description ?? operation.Value.OperationId}) didn't return one of the expected status codes. Returned: {response.StatusCode}");
+					if (!expectedStatusCodes.Contains(response.StatusCode))
+						throw new TestFailedException($"Endpoint {operation.Key} {path.Key} ({operation.Value.Description ?? operation.Value.OperationId}) didn't return one of the expected status codes. Returned: {response.StatusCode}");
+				}
 			}
 		}
 	}
@@ -144,7 +147,7 @@ public class WebServiceTester
 		return await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 	}
 
-	private HttpContent CreateRequestContent(OpenApiOperation operation, string contentType, OpenApiMediaType content, string path, HttpMethod httpMethod)
+	private HttpContent CreateRequestContent(OpenApiOperation operation, string contentType, IOpenApiMediaType content, string path, HttpMethod httpMethod)
 	{
 		var result = CustomRequestContent?.Invoke(new RequestContentInformation(operation, contentType, content, path, httpMethod));
 
@@ -161,7 +164,7 @@ public class WebServiceTester
 		return CreateJsonContent(content, path, httpMethod, operation);
 	}
 
-	private HttpContent CreateFormContent(OpenApiMediaType content, string path, HttpMethod httpMethod, OpenApiOperation operation)
+	private FormUrlEncodedContent CreateFormContent(IOpenApiMediaType content, string path, HttpMethod httpMethod, OpenApiOperation operation)
 	{
 		var values = new Dictionary<string, string>();
 
@@ -174,7 +177,7 @@ public class WebServiceTester
 		return new FormUrlEncodedContent(values);
 	}
 
-	private HttpContent CreateJsonContent(OpenApiMediaType content, string path, HttpMethod httpMethod, OpenApiOperation operation)
+	private StringContent CreateJsonContent(IOpenApiMediaType content, string path, HttpMethod httpMethod, OpenApiOperation operation)
 	{
 		var builder = new StringBuilder();
 		builder.AppendLine("{");
@@ -203,7 +206,7 @@ public class WebServiceTester
 		return new StringContent(builder.ToString(), Encoding.UTF8, "application/json");
 	}
 
-	private static HttpContent CreateMultiPartFormContent(OpenApiMediaType content)
+	private static HttpContent CreateMultiPartFormContent(IOpenApiMediaType content)
 	{
 		var form = new MultipartFormDataContent();
 

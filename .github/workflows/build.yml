@@ -17,9 +17,12 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
+  
   build:
-    # The type of runner that the job will run on
+    permissions:
+      id-token: write
+      contents: read  
+
     runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -37,13 +40,19 @@ jobs:
       - name: Fetch all history for all tags and branches
         run: git fetch --prune --unshallow
 
-      - name: Install .NET Core SDK 8.0.x
+      - name: Install .NET Core SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: | 
-            8.0.x
-            9.0.x
+          dotnet-version: |  
             10.0.x
+            11.0.x
+
+      # Get a short-lived NuGet API key
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
 
       - name: Run Cake script
         uses: cake-build/cake-action@v2
@@ -53,5 +62,5 @@ jobs:
           verbosity: Diagnostic
         env: 
           sonarLogin: ${{ secrets.SONAR_TOKEN }}
-          nugetApiKey: ${{ secrets.nugetApiKey }}
+          nugetApiKey: ${{steps.login.outputs.NUGET_API_KEY}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
