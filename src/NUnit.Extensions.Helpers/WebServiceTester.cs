@@ -27,9 +27,9 @@ public class WebServiceTester
 	public Func<RequestContentInformation, HttpContent?>? CustomRequestContent { get; set; }
 
 	/// <summary>
-	/// Gets or sets the predicate that determines whether an OpenAPI operation should be verified.
+	/// Gets or sets the predicate that determines whether an endpoint should be verified.
 	/// </summary>
-	public Func<OpenApiOperation, bool>? ShouldVerifyOperation { get; set; }
+	public Func<EndpointInformation, bool>? ShouldVerifyEndpoint { get; set; }
 
 	/// <summary>
 	/// Creates a new instance of <see cref=" WebServiceTester"/>
@@ -103,8 +103,13 @@ public class WebServiceTester
 		{
 			if (path.Value.Operations != null)
 			{
-				foreach (var operation in path.Value.Operations.Where(o => IsSecured(o.Value) && ShouldCallOperation(o.Value)))
+				foreach (var operation in path.Value.Operations.Where(o => IsSecured(o.Value)))
 				{
+					var endpointInfo = new EndpointInformation(path.Key, operation.Key, operation.Value);
+
+					if (!ShouldCallEndpoint(endpointInfo))
+						continue;
+
 					var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
 
 					if (!expectedStatusCodes.Contains(response.StatusCode))
@@ -129,11 +134,16 @@ public class WebServiceTester
 		{
 			if (path.Value.Operations != null)
 			{
-				foreach (var operation in path.Value.Operations.Where(o => ShouldCallOperation(o.Value)))
+				foreach (var operation in path.Value.Operations)
 				{
+					var endpointInfo = new EndpointInformation(path.Key, operation.Key, operation.Value);
+
+					if (!ShouldCallEndpoint(endpointInfo))
+						continue;
+
 					var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
 
-					handleResponseDelegate?.Invoke(new EndpointInformation(path.Key, operation.Key, operation.Value), response);
+					handleResponseDelegate?.Invoke(endpointInfo, response);
 				}
 			}
 		}
@@ -266,10 +276,10 @@ public class WebServiceTester
 		return result;
 	}
 
-	private bool ShouldCallOperation(OpenApiOperation operation)
+	private bool ShouldCallEndpoint(EndpointInformation endpointInformation)
 	{
-		if (ShouldVerifyOperation != null)
-			return ShouldVerifyOperation(operation);
+		if (ShouldVerifyEndpoint != null)
+			return ShouldVerifyEndpoint(endpointInformation);
 
 		return true;
 	}

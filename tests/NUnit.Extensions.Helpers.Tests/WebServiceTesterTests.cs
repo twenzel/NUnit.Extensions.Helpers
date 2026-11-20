@@ -106,9 +106,9 @@ public class WebServiceTesterTests
 
 			var helper = new WebServiceTester(stream)
 			{
-				ShouldVerifyOperation = (operation) =>
+				ShouldVerifyEndpoint = (endpointInfo) =>
 				{
-					if (operation.OperationId == "getInventory")
+					if (endpointInfo.Operation.OperationId == "getInventory")
 						return false;
 					return true;
 				}
