@@ -77,6 +77,48 @@ public class WebServiceTesterTests
 		}
 
 		[Test]
+		public async Task Can_Ignore_Dedicated__Endpoint()
+		{
+			var stream = ReadFromResource("petstore_swagger.json");
+
+			var handler = new DelegateHttpMessageHandler();
+			var callCount = 0;
+
+			handler.RequestDelegate = (request) =>
+			{
+				ArgumentNullException.ThrowIfNull(request.RequestUri);
+
+				if (request.RequestUri.AbsolutePath != "/pet/1/uploadImage"
+				&& request.RequestUri.AbsolutePath != "/pet"
+				&& request.RequestUri.AbsolutePath != "/pet/findByStatus"
+				&& request.RequestUri.AbsolutePath != "/pet/findByTags"
+				&& request.RequestUri.AbsolutePath != "/pet/1"
+				&& request.RequestUri.AbsolutePath != "/store/inventory"
+				)
+					Assert.Fail($"{request.RequestUri} is not a secured endpoint");
+
+				callCount++;
+
+				return new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized);
+			};
+
+			var httpClient = new HttpClient(handler) { BaseAddress = new Uri("http://test.com") };
+
+			var helper = new WebServiceTester(stream)
+			{
+				ShouldVerifyOperation = (operation) =>
+				{
+					if (operation.OperationId == "getInventory")
+						return false;
+					return true;
+				}
+			};
+
+			await helper.VerifySecuredEndpointsRequiresAuthentication(httpClient, CancellationToken.None);
+			callCount.ShouldBe(8);
+		}
+
+		[Test]
 		public async Task Throws_Exception_If_Secured_Endpoint_Does_Not_Return_401()
 		{
 			var stream = ReadFromResource("petstore_swagger.json");

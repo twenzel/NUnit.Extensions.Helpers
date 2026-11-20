@@ -27,6 +27,11 @@ public class WebServiceTester
 	public Func<RequestContentInformation, HttpContent?>? CustomRequestContent { get; set; }
 
 	/// <summary>
+	/// Gets or sets the predicate that determines whether an OpenAPI operation should be verified.
+	/// </summary>
+	public Func<OpenApiOperation, bool>? ShouldVerifyOperation { get; set; }
+
+	/// <summary>
 	/// Creates a new instance of <see cref=" WebServiceTester"/>
 	/// </summary>
 	/// <param name="openApiDocumentPath">File path of the OpenApi document</param>
@@ -98,7 +103,7 @@ public class WebServiceTester
 		{
 			if (path.Value.Operations != null)
 			{
-				foreach (var operation in path.Value.Operations.Where(o => IsSecured(o.Value)))
+				foreach (var operation in path.Value.Operations.Where(o => IsSecured(o.Value) && ShouldCallOperation(o.Value)))
 				{
 					var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
 
@@ -124,7 +129,7 @@ public class WebServiceTester
 		{
 			if (path.Value.Operations != null)
 			{
-				foreach (var operation in path.Value.Operations)
+				foreach (var operation in path.Value.Operations.Where(o => ShouldCallOperation(o.Value)))
 				{
 					var response = await CallOperation(httpClient, path.Key, operation.Key, operation.Value, cancellationToken);
 
@@ -206,7 +211,7 @@ public class WebServiceTester
 		return new StringContent(builder.ToString(), Encoding.UTF8, "application/json");
 	}
 
-	private static HttpContent CreateMultiPartFormContent(IOpenApiMediaType content)
+	private static MultipartFormDataContent CreateMultiPartFormContent(IOpenApiMediaType content)
 	{
 		var form = new MultipartFormDataContent();
 
@@ -259,6 +264,14 @@ public class WebServiceTester
 			result = $"\"{result}\"";
 
 		return result;
+	}
+
+	private bool ShouldCallOperation(OpenApiOperation operation)
+	{
+		if (ShouldVerifyOperation != null)
+			return ShouldVerifyOperation(operation);
+
+		return true;
 	}
 
 	private static bool IsSecured(OpenApiOperation operation)
